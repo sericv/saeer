@@ -58,6 +58,7 @@ let menuCategoriesHydrated = false;
 let menuProductsHydrated = false;
 let activeCategoryId = null;
 let selectedCategory = null;
+let currentMenuView = "categories";
 let hasNavigationSetup = false;
 let userRealtimeUnsubscribe = null;
 let categoriesRealtimeUnsubscribe = null;
@@ -720,8 +721,34 @@ function setMenuView(view) {
   const productsView = document.getElementById("menuProductsView");
   if (!categoriesView || !productsView) return;
 
+  currentMenuView = view === "products" ? "products" : "categories";
   categoriesView.classList.toggle("active", view === "categories");
   productsView.classList.toggle("active", view === "products");
+  updateHomeBannerVisibility();
+}
+
+function ensureHomeBannerAutoplay() {
+  clearHomeBannerTimer();
+  if (homeBanners.length > 1) {
+    homeBannerTimer = setInterval(() => goToHomeBanner(homeBannerIndex + 1), 4200);
+  }
+}
+
+function updateHomeBannerVisibility() {
+  const section = document.getElementById("homeBannerSection");
+  if (!section) return;
+  const hasBanners = homeBannerEnabled && Array.isArray(homeBanners) && homeBanners.length > 0;
+  const inProductsView = currentMenuView === "products";
+  if (!hasBanners) {
+    section.classList.remove("is-collapsed");
+    section.style.display = "none";
+    clearHomeBannerTimer();
+    return;
+  }
+  if (section.style.display === "none") section.style.display = "block";
+  section.classList.toggle("is-collapsed", inProductsView);
+  if (inProductsView) clearHomeBannerTimer();
+  else ensureHomeBannerAutoplay();
 }
 
 function ensureSelectedCategory() {
@@ -911,6 +938,7 @@ function renderHomeBanners() {
     section.style.display = "none";
     track.innerHTML = "";
     dots.innerHTML = "";
+    clearHomeBannerTimer();
     return;
   }
   section.style.display = "block";
@@ -924,9 +952,8 @@ function renderHomeBanners() {
   dots.innerHTML = homeBanners.map((_, i) => `<button class="home-banner-dot ${i === homeBannerIndex ? "active" : ""}" onclick="window.__goToHomeBanner(${i})"></button>`).join("");
   goToHomeBanner(homeBannerIndex);
   setupHomeBannerTouch();
-  if (homeBanners.length > 1) {
-    homeBannerTimer = setInterval(() => goToHomeBanner(homeBannerIndex + 1), 4200);
-  }
+  ensureHomeBannerAutoplay();
+  updateHomeBannerVisibility();
 }
 
 function renderRewardsShowcase(visits) {
@@ -1014,6 +1041,7 @@ function applyPreorderAvailability() {
     navCart?.classList.remove("nav-item--hidden");
     navCart?.setAttribute("aria-hidden", "false");
     mainApp?.classList.add("preorder-enabled");
+    bindPreorderAudioUnlockOnce();
     updateCartChrome();
     if (currentUserId) {
       void resumePreorderOrderTracking();
@@ -1525,10 +1553,13 @@ function triggerPreorderReadyUi(orderId) {
 
 function subscribeTrackedOrder(orderId) {
   if (!db || !orderId) return;
+  if (!preorderGeneralSettingsLoaded || !preOrderEnabled) return;
+  if (!currentUserId) return;
   clearActiveOrderListener();
   writeActiveOrderTrack(orderId);
 
   let primed = false;
+  let previousStatus = null;
   activeOrderUnsubscribe = db
     .collection("orders")
     .doc(orderId)
@@ -1577,18 +1608,17 @@ function subscribeTrackedOrder(orderId) {
         updateActiveOrderTrackingUi(orderId, data);
         setCustomerPreorderCartLocked(true);
 
-        let ack = false;
-        try {
-          ack = sessionStorage.getItem(`preorder_ready_ack_${orderId}`) === "1";
-        } catch (e) {}
         if (!primed) {
           primed = true;
-          if (status === "ready" && !ack) {
-            triggerPreorderReadyUi(orderId);
-          }
+          previousStatus = status;
           return;
         }
-        if (status === "ready" && !preorderReadyNotified.has(orderId) && !ack) {
+
+        const statusChanged = previousStatus !== status;
+        const movedToReady = statusChanged && previousStatus != null && previousStatus !== "ready" && status === "ready";
+        previousStatus = status;
+
+        if (movedToReady && !preorderReadyNotified.has(orderId)) {
           triggerPreorderReadyUi(orderId);
         }
       },
@@ -2152,8 +2182,8 @@ async function startMainApp() {
 
   if (preorderGeneralSettingsLoaded && preOrderEnabled && currentUserId) {
     void resumePreorderOrderTracking();
+    bindPreorderAudioUnlockOnce();
   }
-  bindPreorderAudioUnlockOnce();
 }
 
 async function resumePreorderOrderTracking() {
