@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المالك — إدارة المتاجر</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f6f2ec;
+      --bg-deep: #ebe4da;
+      --surface: #ffffff;
+      --gold: #c3a776;
+      --gold-soft: rgba(195, 167, 118, 0.22);
+      --gold-dark: #8f7649;
+      --text: #2c2720;
+      --muted: #6e6459;
+      --border: rgba(44, 39, 32, 0.08);
+      --shadow: 0 4px 24px rgba(44, 39, 32, 0.06), 0 1px 3px rgba(44, 39, 32, 0.04);
+      --shadow-hover: 0 12px 40px rgba(44, 39, 32, 0.1);
+      --radius: 18px;
+      --status-active: #2d9d5f;
+      --status-expired: #c94c4c;
+      --status-warn: #d9822b;
+      --status-inactive: #8a8278;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Cairo", system-ui, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 100% 0%, rgba(195, 167, 118, 0.18), transparent 50%),
+        radial-gradient(ellipse 80% 60% at 0% 100%, rgba(195, 167, 118, 0.12), transparent 45%);
+      color: var(--text);
+      padding: clamp(16px, 4vw, 32px);
+      padding-bottom: 100px;
+    }
+    .shell { max-width: 1120px; margin: 0 auto; }
+
+    /* Login */
+    #ownerLogin {
+      max-width: 420px;
+      margin: 48px auto;
+      padding: 32px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    #ownerLogin h1 { font-size: 1.35rem; font-weight: 800; margin: 0 0 8px; }
+    #ownerLogin .sub { color: var(--muted); font-size: 14px; margin: 0 0 24px; line-height: 1.5; }
+    .field-label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .input {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: #faf8f5; color: var(--text);
+      font-family: inherit; font-size: 15px; transition: border-color .15s, box-shadow .15s;
+    }
+    .input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+    .btn {
+      border: none; border-radius: 14px; padding: 12px 18px; font-weight: 700; cursor: pointer;
+      font-family: inherit; font-size: 14px; transition: transform .15s, box-shadow .15s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #fff; width: 100%; margin-top: 8px;
+      box-shadow: 0 4px 14px rgba(195, 167, 118, 0.35);
+    }
+    .btn-gold:hover { filter: brightness(1.03); }
+    .error { color: var(--status-expired); font-size: 13px; margin-top: 10px; }
+
+    /* Dashboard shell */
+    #ownerPanel { display: none; }
+
+    .dash-header {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 24px;
+    }
+    .dash-title-wrap h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
+    .dash-title-wrap p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .btn-ghost {
+      background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+      padding: 10px 16px; border-radius: 12px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; transition: background .15s, border-color .15s;
+    }
+    .btn-ghost:hover { border-color: rgba(195, 167, 118, 0.45); color: var(--text); }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 22px 24px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1rem; font-weight: 800; margin: 0 0 18px; color: var(--text); }
+
+    /* Form grid */
+    .form-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 640px) {
+      .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    }
+    .form-actions { grid-column: 1 / -1; margin-top: 4px; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px;
+    }
+    .toolbar .grow { flex: 1; min-width: 200px; }
+    .filter-select {
+      padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--surface); font-family: inherit; font-size: 14px; color: var(--text);
+      min-width: 160px;
+    }
+
+    /* Cafe cards grid */
+    .cafe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .cafe-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .cafe-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-hover);
+    }
+    .cafe-card-head {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .cafe-card-name { font-weight: 800; font-size: 1.05rem; margin: 0; line-height: 1.35; }
+    .badge-status {
+      flex-shrink: 0;
+      font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge-status.active { background: rgba(45, 157, 95, 0.14); color: var(--status-active); }
+    .badge-status.expired { background: rgba(201, 76, 76, 0.14); color: var(--status-expired); }
+    .badge-status.warn { background: rgba(217, 130, 43, 0.16); color: var(--status-warn); }
+    .badge-status.inactive { background: rgba(138, 130, 120, 0.18); color: var(--status-inactive); }
+    .badge-plan {
+      font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 999px;
+      background: rgba(195, 167, 118, 0.2); color: var(--gold-dark); margin-inline-start: 6px;
+    }
+    .badge-plan.trial { background: rgba(45, 157, 95, 0.14); color: var(--status-active); }
+    .badge-plan.paid { background: rgba(59, 130, 246, 0.12); color: #2563eb; }
+
+    .cafe-meta { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 16px; }
+    .cafe-meta-row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .cafe-meta-row:last-child { margin-bottom: 0; }
+    .cafe-meta-label { opacity: 0.85; font-weight: 600; }
+    .cafe-id-code {
+      font-family: ui-monospace, monospace; font-size: 11px; direction: ltr; display: inline-block;
+      background: rgba(44, 39, 32, 0.06); padding: 4px 8px; border-radius: 8px; margin-top: 10px; word-break: break-all;
+    }
+
+    .card-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-mini {
+      flex: 1;
+      min-width: calc(50% - 4px);
+      padding: 9px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: #faf8f5;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center; justify-content: center; gap: 6px;
+      transition: background .15s, border-color .15s;
+    }
+    .btn-mini:hover { border-color: rgba(195, 167, 118, 0.5); background: #fff; }
+    .btn-mini.primary {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #fff; border: none;
+      box-shadow: 0 2px 10px rgba(195, 167, 118, 0.25);
+    }
+    .btn-mini.danger { color: var(--status-expired); border-color: rgba(201, 76, 76, 0.35); background: rgba(201, 76, 76, 0.06); }
+    .btn-mini.danger:hover { background: rgba(201, 76, 76, 0.12); }
+
+    .cafe-password-block {
+      margin-bottom: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .cafe-pwd-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .cafe-pwd-display {
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      flex: 1;
+      min-width: 0;
+      word-break: break-all;
+      background: rgba(44, 39, 32, 0.05);
+      padding: 8px 10px;
+      border-radius: 10px;
+      direction: ltr;
+      text-align: left;
+    }
+    .btn-mini.icon-only { min-width: 42px; flex: 0 0 auto; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .empty-state i { font-size: 2.5rem; opacity: .35; margin-bottom: 12px; display: block; color: var(--gold-dark); }
+
+    /* Result box after create */
+    .success-box {
+      margin-top: 16px; padding: 14px 16px; border-radius: 12px;
+      background: rgba(45, 157, 95, 0.08); border: 1px solid rgba(45, 157, 95, 0.25);
+      font-size: 13px; word-break: break-all; line-height: 1.55;
+      display: none;
+    }
+    .success-box a { color: var(--gold-dark); font-weight: 700; }
+
+    /* Toasts */
+    .toast-wrap {
+      position: fixed; bottom: 24px; left: 24px; z-index: 10000;
+      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      min-width: 240px; max-width: 360px;
+      padding: 12px 16px; border-radius: 14px;
+      background: rgba(44, 39, 32, 0.92); color: #fff;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      animation: toastIn .25s ease;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 520px) {
+      .btn-mini { min-width: 100%; }
+      .toolbar .grow { width: 100%; }
+    }
+
+    .owner-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(30, 26, 22, 0.45);
+      backdrop-filter: blur(4px);
+    }
+    .owner-modal.is-open { display: flex; }
+    .owner-modal-card {
+      width: min(440px, 100%);
+      max-height: min(90vh, 720px);
+      overflow-y: auto;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-hover);
+      padding: 22px 24px;
+    }
+    .owner-modal-card h3 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 800; }
+    .owner-modal-card .muted { color: var(--muted); font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
+    .owner-modal-card label.field-label { margin-top: 12px; }
+    .owner-modal-card .input { margin-top: 6px; }
+    .owner-modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+    .owner-check-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0 6px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .owner-check-row input { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <div id="ownerLogin" class="shell">
+    <div style="background:var(--surface);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);border:1px solid var(--border);max-width:420px;margin:48px auto;">
+      <h1><i class="fas fa-crown" style="color:var(--gold);"></i> دخول المالك</h1>
+      <p class="sub">لوحة إدارة جميع المتاجر</p>
+      <label class="field-label" for="ownerPassword">كلمة المرور</label>
+      <input id="ownerPassword" class="input" type="password" placeholder="••••••••" autocomplete="current-password">
+      <button class="btn btn-gold" type="button" onclick="ownerLogin()">دخول</button>
+      <div id="ownerLoginError" class="error"></div>
+    </div>
+  </div>
+
+  <div id="ownerPanel" class="shell">
+    <header class="dash-header">
+      <div class="dash-title-wrap">
+        <h1>لوحة المالك</h1>
+        <p>إدارة المتاجر، الاشتراكات، والوصول السريع لتطبيق العميل ولوحة الكاشير.</p>
+      </div>
+      <button type="button" class="btn-ghost" onclick="ownerLogout()">
+        <i class="fas fa-sign-out-alt"></i> خروج
+      </button>
+    </header>
+
+    <section class="card">
+      <h2><i class="fas fa-plus-circle" style="color:var(--gold);"></i> إضافة متجر جديد</h2>
+      <div class="form-grid cols-2">
+        <div>
+          <label class="field-label" for="newCafeName">اسم المتجر</label>
+          <input id="newCafeName" class="input" placeholder="مثال: متجر النخيل">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label class="field-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input id="newStoreTrial" type="checkbox" style="width:18px;height:18px;">
+            <span>متجر تجريبي (Trial)</span>
+          </label>
+        </div>
+        <div id="paidPlanBlock" class="cols-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;grid-column:1/-1;">
+          <div>
+            <label class="field-label" for="newCafePlan">خطة الاشتراك</label>
+            <select id="newCafePlan" class="input">
+              <option value="monthly">شهري</option>
+              <option value="yearly">سنوي</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="newCafeDuration">المدة (بالأشهر)</label>
+            <input id="newCafeDuration" class="input" type="number" min="1" max="120" value="1">
+          </div>
+        </div>
+        <div id="trialBlock" style="display:none;grid-column:1/-1;">
+          <label class="field-label" for="newCafeTrialDays">عدد أيام التجربة</label>
+          <input id="newCafeTrialDays" class="input" type="number" min="1" max="365" value="14">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-gold" id="createCafeBtn" onclick="createNewCafe()" style="width:auto;min-width:200px;">
+            <i class="fas fa-check"></i> إنشاء المتجر
+          </button>
+        </div>
+      </div>
+      <div id="createCafeResult" class="success-box"></div>
+    </section>
+
+    <section class="card" style="margin-bottom:0;">
+      <h2 style="margin-bottom:16px;"><i class="fas fa-store" style="color:var(--gold);"></i> المتاجر</h2>
+
+      <div class="toolbar">
+        <div class="grow">
+          <label class="field-label" for="cafeSearchInput">بحث بالاسم</label>
+          <input id="cafeSearchInput" class="input" type="search" placeholder="ابحث عن متجر…" oninput="renderCafeCards()">
+        </div>
+        <div>
+          <label class="field-label" for="cafeFilterSelect">التصفية</label>
+          <select id="cafeFilterSelect" class="filter-select" onchange="renderCafeCards()">
+            <option value="all">الكل</option>
+            <option value="active">نشط فقط</option>
+            <option value="expired">منتهي الاشتراك</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="cafesList"><p style="color:var(--muted);text-align:center;padding:24px;">جاري التحميل…</p></div>
+    </section>
+  </div>
+
+  <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
+
+  <div id="subscriptionEditModal" class="owner-modal" role="dialog" aria-modal="true" aria-labelledby="subscriptionEditTitle" onclick="if (event.target === this) closeSubscriptionEditModal()">
+    <div class="owner-modal-card" onclick="event.stopPropagation()">
+      <h3 id="subscriptionEditTitle">تعديل الاشتراك</h3>
+      <p class="muted" id="subscriptionEditStoreLine"></p>
+      <label class="owner-check-row">
+        <input type="checkbox" id="subEditUnlimited">
+        <span>غير محدود</span>
+      </label>
+      <p class="tiny" style="margin:0 0 8px;color:var(--muted);font-size:12px;">عند التفعيل يُحذف تاريخ الانتهاء (اشتراك مفتوح).</p>
+      <label class="field-label" for="subEditExpiresLocal">تاريخ انتهاء محدد</label>
+      <input type="datetime-local" id="subEditExpiresLocal" class="input">
+      <label class="field-label" for="subEditDeltaDays">تعديل بالأيام</label>
+      <input type="number" id="subEditDeltaDays" class="input" step="1" placeholder="موجب يزيد، سالب ينقص (من التاريخ الحالي للانتهاء أو من اليوم)">
+      <p class="tiny" style="margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.5;">الأولوية عند الحفظ: «غير محدود» ثم تاريخ الانتهاء إن وُجد، وإلا عدد الأيام.</p>
+      <div id="subEditFormError" class="error" style="display:none;margin-top:10px;"></div>
+      <div class="owner-modal-actions">
+        <button type="button" class="btn btn-gold" style="width:auto;min-width:120px;" onclick="saveSubscriptionEdit()">حفظ</button>
+        <button type="button" class="btn-ghost" onclick="closeSubscriptionEditModal()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjpJ9ateL8w9-L5gBaYiT8JD0WwBrWfwo",
+      authDomain: "coffee-platform-52b80.firebaseapp.com",
+      projectId: "coffee-platform-52b80",
+      storageBucket: "coffee-platform-52b80.firebasestorage.app",
+      messagingSenderId: "868712905693",
+      appId: "1:868712905693:web:3ae6d3d227a3b5901d1434"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const OWNER_PASSWORD = "owner123";
+    const NEAR_EXPIRY_DAYS = 14;
+
+    /** @type {{ id: string, data: object }[]} */
+    let cafesCache = [];
+    const passwordShownIds = new Set();
+    let subscriptionEditCafeId = null;
+
+    function toDatetimeLocalValue(d) {
+      if (!d || Number.isNaN(d.getTime())) return "";
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function openSubscriptionEditModal(cafeId) {
+      subscriptionEditCafeId = cafeId;
+      const row = cafesCache.find(x => x.id === cafeId);
+      const d = row?.data || {};
+      const name = escapeHtml(d.name || cafeId);
+      const line = document.getElementById("subscriptionEditStoreLine");
+      if (line) line.textContent = `المتجر: ${name}`;
+      const exp = getExpiryDate(d);
+      const unlimited = !getExpiryDate(d);
+      const chk = document.getElementById("subEditUnlimited");
+      const dt = document.getElementById("subEditExpiresLocal");
+      const delta = document.getElementById("subEditDeltaDays");
+      const err = document.getElementById("subEditFormError");
+      if (err) {
+        err.style.display = "none";
+        err.textContent = "";
+      }
+      if (chk) chk.checked = unlimited;
+      if (dt) {
+        dt.value = exp ? toDatetimeLocalValue(exp) : "";
+        dt.disabled = !!chk?.checked;
+      }
+      if (delta) delta.value = "";
+      const modal = document.getElementById("subscriptionEditModal");
+      if (modal) modal.classList.add("is-open");
+      if (chk && dt) {
+        chk.onchange = () => {
+          dt.disabled = chk.checked;
+          if (chk.checked) dt.value = "";
+        };
+      }
+    }
+
+    function closeSubscriptionEditModal() {
+      subscriptionEditCafeId = null;
+      const modal = document.getElementById("subscriptionEditModal");
+      if (modal) modal.classList.remove("is-open");
+    }
+
+    async function saveSubscriptionEdit() {
+      const id = subscriptionEditCafeId;
+      const err = document.getElementById("subEditFormError");
+      if (!id) return;
+      if (err) {
+        err.style.display = "none";
+        err.textContent = "";
+      }
+      const unlimited = document.getElementById("subEditUnlimited")?.checked === true;
+      if (unlimited) {
+        try {
+          await db.collection("cafes").doc(id).update({ expiresAt: null });
+          showToast("تم حفظ الاشتراك (غير محدود)");
+          closeSubscriptionEditModal();
+          loadCafesList();
+        } catch (e) {
+          console.error(e);
+          if (err) {
+            err.textContent = "فشل الحفظ: " + (e.message || e);
+            err.style.display = "block";
+          }
+        }
+        return;
+      }
+      const custom = (document.getElementById("subEditExpiresLocal")?.value || "").trim();
+      const deltaRaw = document.getElementById("subEditDeltaDays")?.value;
+      const delta = deltaRaw === "" || deltaRaw == null ? 0 : Number(deltaRaw);
+      let nextDate = null;
+      if (custom) {
+        nextDate = new Date(custom);
+        if (Number.isNaN(nextDate.getTime())) {
+          if (err) {
+            err.textContent = "تاريخ الانتهاء غير صالح.";
+            err.style.display = "block";
+          }
+          return;
+        }
+      } else if (delta !== 0 && !Number.isNaN(delta)) {
+        const row = cafesCache.find(x => x.id === id);
+        const cur = row ? getExpiryDate(row.data) : null;
+        const base = cur && !Number.isNaN(cur.getTime()) ? new Date(cur.getTime()) : new Date();
+        base.setDate(base.getDate() + delta);
+        nextDate = base;
+      } else {
+        if (err) {
+          err.textContent = "فعّل «غير محدود» أو اختر تاريخ انتهاء أو أدخل عدداً للأيام.";
+          err.style.display = "block";
+        }
+        return;
+      }
+      try {
+        await db.collection("cafes").doc(id).update({
+          expiresAt: firebase.firestore.Timestamp.fromDate(nextDate)
+        });
+        showToast("تم حفظ تاريخ الانتهاء");
+        closeSubscriptionEditModal();
+        loadCafesList();
+      } catch (e) {
+        console.error(e);
+        if (err) {
+          err.textContent = "فشل الحفظ: " + (e.message || e);
+          err.style.display = "block";
+        }
+      }
+    }
+
+    /** Latin slug + 4 random digits (e.g. rose → rose8472). Arabic-only names → short hash base + digits. */
+    function generateStorePassword(storeName) {
+      const raw = String(storeName || "").trim().toLowerCase();
+      let slug = raw.replace(/[^a-z0-9]/g, "").slice(0, 12);
+      if (slug.length < 2) {
+        let h = 0;
+        for (let i = 0; i < raw.length; i++) h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
+        slug = "st" + String(Math.abs(h) % 900 + 100);
+      }
+      const n = Math.floor(1000 + Math.random() * 9000);
+      return slug.slice(0, 12) + n;
+    }
+
+    function syncNewStoreTrialForm() {
+      const trial = document.getElementById("newStoreTrial")?.checked === true;
+      const paid = document.getElementById("paidPlanBlock");
+      const trialB = document.getElementById("trialBlock");
+      if (paid) paid.style.display = trial ? "none" : "grid";
+      if (trialB) trialB.style.display = trial ? "block" : "none";
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement("div");
+      div.textContent = s == null ? "" : String(s);
+      return div.innerHTML;
+    }
+
+    function showToast(message) {
+      const wrap = document.getElementById("toastWrap");
+      if (!wrap) return;
+      const t = document.createElement("div");
+      t.className = "toast";
+      t.textContent = message;
+      wrap.appendChild(t);
+      setTimeout(() => { t.remove(); }, 3200);
+    }
+
+    function ownerLogin() {
+      const v = document.getElementById("ownerPassword").value;
+      const err = document.getElementById("ownerLoginError");
+      if (v !== OWNER_PASSWORD) {
+        err.textContent = "كلمة المرور غير صحيحة";
+        return;
+      }
+      localStorage.setItem("owner_logged_in", "true");
+      err.textContent = "";
+      document.getElementById("ownerLogin").style.display = "none";
+      document.getElementById("ownerPanel").style.display = "block";
+      loadCafesList();
+    }
+
+    function ownerLogout() {
+      localStorage.removeItem("owner_logged_in");
+      location.reload();
+    }
+
+    function checkOwnerAuth() {
+      if (localStorage.getItem("owner_logged_in") === "true") {
+        document.getElementById("ownerLogin").style.display = "none";
+        document.getElementById("ownerPanel").style.display = "block";
+        loadCafesList();
+      }
+    }
+
+    function getExpiryDate(d) {
+      if (!d.expiresAt || !d.expiresAt.toDate) return null;
+      return d.expiresAt.toDate();
+    }
+
+    function getCreatedDate(d) {
+      if (d.createdAt && d.createdAt.toDate) return d.createdAt.toDate();
+      return null;
+    }
+
+    /**
+     * status: 'active' | 'warn' | 'expired' | 'inactive'
+     */
+    function getCafeStatus(d, exp) {
+      const active = d.active !== false;
+      if (!active) return { kind: "inactive", label: "معطّل" };
+      const now = Date.now();
+      if (!exp) return { kind: "active", label: "نشط" };
+      if (exp.getTime() < now) return { kind: "expired", label: "منتهي" };
+      const msLeft = exp.getTime() - now;
+      const daysLeft = msLeft / (86400 * 1000);
+      if (daysLeft <= NEAR_EXPIRY_DAYS) return { kind: "warn", label: "ينتهي قريباً" };
+      return { kind: "active", label: "نشط" };
+    }
+
+    async function loadCafesList() {
+      const el = document.getElementById("cafesList");
+      try {
+        const snap = await db.collection("cafes").get();
+        cafesCache = snap.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+        cafesCache.sort((a, b) => {
+          const ta = getCreatedDate(a.data)?.getTime?.() || a.data.createdAt?.seconds * 1000 || 0;
+          const tb = getCreatedDate(b.data)?.getTime?.() || b.data.createdAt?.seconds * 1000 || 0;
+          return tb - ta;
+        });
+        renderCafeCards();
+      } catch (e) {
+        console.error(e);
+        el.innerHTML = "<p class=\"error\" style=\"text-align:center;padding:24px;\">تعذّر تحميل القائمة. تأكد من قواعد Firestore.</p>";
+      }
+    }
+
+    function renderCafeCards() {
+      const el = document.getElementById("cafesList");
+      const q = (document.getElementById("cafeSearchInput")?.value || "").trim().toLowerCase();
+      const filter = document.getElementById("cafeFilterSelect")?.value || "all";
+
+      let rows = cafesCache.filter(({ data, id }) => {
+        const name = (data.name || id || "").toLowerCase();
+        if (q && !name.includes(q)) return false;
+        const exp = getExpiryDate(data);
+        const now = Date.now();
+        const subExpired = !!(exp && exp.getTime() < now);
+        const activeFlag = data.active !== false;
+        if (filter === "active") {
+          if (!activeFlag || subExpired) return false;
+        }
+        if (filter === "expired") {
+          if (!subExpired) return false;
+        }
+        return true;
+      });
+
+      if (!cafesCache.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-store"></i>
+            لا يوجد متاجر بعد
+          </div>`;
+        return;
+      }
+      if (!rows.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-search"></i>
+            لا توجد نتائج مطابقة للبحث أو التصفية
+          </div>`;
+        return;
+      }
+
+      el.innerHTML = `<div class="cafe-grid">${rows.map(({ id, data: d }) => {
+        const name = escapeHtml(d.name || id);
+        const exp = getExpiryDate(d);
+        const expStr = exp ? exp.toLocaleDateString("ar-SA") : (d.active !== false ? "غير محدود" : "—");
+        const created = getCreatedDate(d);
+        const createdStr = created ? created.toLocaleDateString("ar-SA") : "—";
+        const planLabel = d.plan === "monthly" ? "شهري" : d.plan === "yearly" ? "سنوي" : d.plan === "trial" ? "تجريبي" : (d.plan || "—");
+        const planBadge =
+          d.plan === "trial"
+            ? '<span class="badge-plan trial">تجريبي</span>'
+            : d.plan === "monthly" || d.plan === "yearly"
+              ? '<span class="badge-plan paid">مدفوع</span>'
+              : d.plan
+                ? `<span class="badge-plan">${escapeHtml(String(d.plan))}</span>`
+                : "";
+        const status = getCafeStatus(d, exp);
+        const badgeClass = status.kind === "inactive" ? "inactive"
+          : status.kind === "expired" ? "expired"
+          : status.kind === "warn" ? "warn" : "active";
+        const active = d.active !== false;
+        const idAttr = escapeHtml(id).replace(/"/g, "&quot;");
+        const trialDaysRow =
+          d.plan === "trial" && d.trialDays != null && !Number.isNaN(Number(d.trialDays))
+            ? `<div class="cafe-meta-row"><span class="cafe-meta-label">أيام التجربة</span><span>${escapeHtml(String(d.trialDays))}</span></div>`
+            : "";
+        const pwd = d.password != null && String(d.password).length ? String(d.password) : "";
+        const pwdVisible = passwordShownIds.has(id);
+        const pwdDisplay = pwd
+          ? (pwdVisible ? escapeHtml(pwd) : "••••••••")
+          : "";
+        const pwdBlock = pwd
+          ? `<div class="cafe-password-block">
+              <div class="cafe-meta-row"><span class="cafe-meta-label">كلمة مرور الكاشير</span></div>
+              <div class="cafe-pwd-row">
+                <span class="cafe-pwd-display">${pwdDisplay}</span>
+                <button type="button" class="btn-mini icon-only" data-cafe-action="togglePwd" data-cafe-id="${idAttr}" title="إظهار / إخفاء"><i class="fas fa-eye${pwdVisible ? "-slash" : ""}"></i></button>
+                <button type="button" class="btn-mini icon-only" data-cafe-action="copyPwd" data-cafe-id="${idAttr}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>`
+          : `<p class="tiny" style="margin:0 0 10px;opacity:0.85;">لا توجد كلمة مرور لهذا المتجر (متجر قديم — أنشئ وصولاً جديداً من المالك أو أضف حقل password يدوياً).</p>`;
+
+        return `
+          <article class="cafe-card">
+            <div class="cafe-card-head">
+              <h3 class="cafe-card-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">${name}${planBadge}</h3>
+              <span class="badge-status ${badgeClass}">${escapeHtml(status.label)}</span>
+            </div>
+            <div class="cafe-meta">
+              <div class="cafe-meta-row">
+                <span class="cafe-meta-label">الاشتراك</span>
+                <span>${escapeHtml(planLabel)}</span>
+              </div>
+              ${trialDaysRow}
+              <div class="cafe-meta-row">
+                <span class="cafe-meta-label">ينتهي</span>
+                <span>${escapeHtml(expStr)}</span>
+              </div>
+              <div class="cafe-meta-row">
+                <span class="cafe-meta-label">تاريخ الإنشاء</span>
+                <span>${escapeHtml(createdStr)}</span>
+              </div>
+              ${pwdBlock}
+              <div class="cafe-id-code" dir="ltr">${escapeHtml(id)}</div>
+            </div>
+            <div class="card-actions">
+              <button type="button" class="btn-mini primary" data-cafe-action="customer" data-cafe-id="${idAttr}">
+                <i class="fas fa-mobile-screen"></i> دخول العميل
+              </button>
+              <button type="button" class="btn-mini primary" data-cafe-action="cashier" data-cafe-id="${idAttr}">
+                <i class="fas fa-cash-register"></i> دخول الكاشير
+              </button>
+              <button type="button" class="btn-mini" data-cafe-action="copyCustomer" data-cafe-id="${idAttr}">
+                <i class="fas fa-link"></i> نسخ رابط العميل
+              </button>
+              <button type="button" class="btn-mini" data-cafe-action="copyCashier" data-cafe-id="${idAttr}">
+                <i class="fas fa-link"></i> نسخ رابط الكاشير
+              </button>
+              <button type="button" class="btn-mini" data-cafe-action="editSubscription" data-cafe-id="${idAttr}">
+                <i class="fas fa-calendar-alt"></i> تعديل الاشتراك
+              </button>
+              ${active
+                ? `<button type="button" class="btn-mini danger" data-cafe-action="deactivate" data-cafe-id="${idAttr}"><i class="fas fa-ban"></i> تعطيل</button>`
+                : `<button type="button" class="btn-mini" data-cafe-action="reactivate" data-cafe-id="${idAttr}"><i class="fas fa-redo"></i> تفعيل</button>`
+              }
+            </div>
+          </article>`;
+      }).join("")}</div>`;
+    }
+
+    /** Safe onclick id — alphanumeric Firebase ids; escape quotes in onclick */
+    function openCustomerApp(cafeId) {
+      window.location.href = new URL(`index.html?cafe=${encodeURIComponent(cafeId)}`, window.location.href).href;
+    }
+
+    function openCashierApp(cafeId) {
+      window.location.href = new URL(`cashier.html?cafe=${encodeURIComponent(cafeId)}`, window.location.href).href;
+    }
+
+    function copyCustomerLink(cafeId) {
+      const url = new URL(`index.html?cafe=${encodeURIComponent(cafeId)}`, window.location.href).href;
+      navigator.clipboard.writeText(url).then(() => showToast("تم النسخ")).catch(() => {
+        showToast("تعذّر النسخ — انسخ يدوياً");
+      });
+    }
+
+    function copyCashierLink(cafeId) {
+      const url = new URL(`cashier.html?cafe=${encodeURIComponent(cafeId)}`, window.location.href).href;
+      navigator.clipboard.writeText(url).then(() => showToast("تم نسخ رابط الكاشير")).catch(() => {
+        showToast("تعذّر النسخ — انسخ يدوياً");
+      });
+    }
+
+    function toggleStorePasswordVisibility(storeId) {
+      if (passwordShownIds.has(storeId)) passwordShownIds.delete(storeId);
+      else passwordShownIds.add(storeId);
+      renderCafeCards();
+    }
+
+    function copyStorePassword(storeId) {
+      const row = cafesCache.find(x => x.id === storeId);
+      const p = row && row.data && row.data.password != null ? String(row.data.password) : "";
+      if (!p) {
+        showToast("لا توجد كلمة مرور محفوظة");
+        return;
+      }
+      navigator.clipboard.writeText(p).then(() => showToast("تم نسخ كلمة المرور")).catch(() => showToast("تعذّر النسخ"));
+    }
+
+    async function softDeleteCafe(cafeId) {
+      if (!window.confirm("تعطيل هذا المتجر؟ ستُحظر لوحاته حتى يتم التفعيل مجددًا.")) return;
+      await db.collection("cafes").doc(cafeId).update({ active: false, deactivatedAt: new Date() });
+      showToast("تم التعطيل");
+      loadCafesList();
+    }
+
+    async function reactivateCafe(cafeId) {
+      await db.collection("cafes").doc(cafeId).update({ active: true, deactivatedAt: firebase.firestore.FieldValue.delete() });
+      showToast("تم التفعيل");
+      loadCafesList();
+    }
+
+    async function createNewCafe() {
+      const name = document.getElementById("newCafeName").value.trim();
+      const isTrial = document.getElementById("newStoreTrial")?.checked === true;
+      const btn = document.getElementById("createCafeBtn");
+      const resultEl = document.getElementById("createCafeResult");
+      if (!name) return;
+      btn.disabled = true;
+      try {
+        const ref = db.collection("cafes").doc();
+        const cafeId = ref.id;
+        const createdAt = new Date();
+        let plan;
+        let expiresAt = new Date(createdAt);
+        const storePassword = generateStorePassword(name);
+        const payload = {
+          name,
+          cafeId,
+          createdAt,
+          active: true,
+          password: storePassword
+        };
+        if (isTrial) {
+          const trialDays = Math.max(1, Math.min(365, Number(document.getElementById("newCafeTrialDays")?.value) || 14));
+          plan = "trial";
+          payload.plan = plan;
+          payload.trialDays = trialDays;
+          expiresAt.setDate(expiresAt.getDate() + trialDays);
+          payload.expiresAt = expiresAt;
+        } else {
+          plan = document.getElementById("newCafePlan").value;
+          const months = Math.max(1, Math.min(120, Number(document.getElementById("newCafeDuration").value) || 1));
+          payload.plan = plan;
+          expiresAt.setMonth(expiresAt.getMonth() + months);
+          payload.expiresAt = expiresAt;
+        }
+        await ref.set(payload);
+        const link = new URL(`cashier.html?cafe=${encodeURIComponent(cafeId)}`, window.location.href).href;
+        resultEl.style.display = "block";
+        resultEl.innerHTML = `تم الإنشاء.<br><strong>كلمة مرور الكاشير:</strong> <code dir="ltr" style="background:rgba(0,0,0,.06);padding:2px 8px;border-radius:8px;">${escapeHtml(storePassword)}</code><br><small>احفظها — تظهر أيضاً في بطاقة المتجر.</small><br><br><strong>رابط لوحة الكاشير:</strong><br><a href="${escapeHtml(link)}">${escapeHtml(link)}</a>`;
+        document.getElementById("newCafeName").value = "";
+        document.getElementById("newStoreTrial").checked = false;
+        syncNewStoreTrialForm();
+        showToast("تم إنشاء المتجر");
+        loadCafesList();
+      } catch (e) {
+        console.error(e);
+        resultEl.style.display = "block";
+        resultEl.textContent = "فشل الإنشاء: " + (e.message || e);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById("ownerPanel").addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-cafe-action]");
+      if (!btn || !document.getElementById("cafesList").contains(btn)) return;
+      const id = btn.getAttribute("data-cafe-id");
+      if (!id) return;
+      const act = btn.getAttribute("data-cafe-action");
+      if (act === "customer") openCustomerApp(id);
+      else if (act === "cashier") openCashierApp(id);
+      else if (act === "copyCustomer") copyCustomerLink(id);
+      else if (act === "copyCashier") copyCashierLink(id);
+      else if (act === "togglePwd") toggleStorePasswordVisibility(id);
+      else if (act === "copyPwd") copyStorePassword(id);
+      else if (act === "deactivate") softDeleteCafe(id);
+      else if (act === "reactivate") reactivateCafe(id);
+      else if (act === "editSubscription") openSubscriptionEditModal(id);
+    });
+
+    document.getElementById("newStoreTrial")?.addEventListener("change", syncNewStoreTrialForm);
+    syncNewStoreTrialForm();
+    checkOwnerAuth();
+  </script>
+</body>
+</html>

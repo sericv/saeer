@@ -1,0 +1,363 @@
+<!-- File: index.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>برنامج الولاء</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- شاشة تسجيل الدخول -->
+    <div id="loginScreen" class="screen fade-in" style="display:none;">
+      <div class="glass-card auth-card">
+        <p class="auth-store-name" id="authStoreName">متجر</p>
+        <h1 class="brand-title auth-title">تسجيل الدخول</h1>
+        <p class="brand-subtitle auth-subtitle">سجل دخولك للوصول إلى طلباتك ونقاطك.</p>
+        <div class="input-group">
+          <input type="tel" id="loginPhone" placeholder="رقم الجوال" class="modern-input">
+        </div>
+        <button onclick="checkUserLogin()" class="btn-gold btn-block">تسجيل الدخول</button>
+        <button onclick="continueAsGuest()" class="btn-outline btn-block">تصفح القائمة كزائر</button>
+        <p class="helper-text">أدخل رقم جوالك للوصول إلى حسابك</p>
+      </div>
+    </div>
+
+    <!-- شاشة التسجيل -->
+    <div id="registerScreen" class="screen fade-in" style="display:none;">
+      <div class="glass-card">
+        <div class="brand-icon">🌟</div>
+        <h1 class="brand-title">حساب جديد</h1>
+        <p class="brand-subtitle">أنشئ بطاقة الولاء الخاصة بك</p>
+        <div class="input-group">
+          <input type="text" id="regName" placeholder="الاسم الكامل" class="modern-input">
+        </div>
+        <div class="input-group">
+          <input type="tel" id="regPhone" placeholder="رقم الجوال" class="modern-input">
+        </div>
+        <button onclick="registerNewUser()" class="btn-gold btn-block">تسجيل</button>
+        <button onclick="goBackToLogin()" class="btn-outline btn-block">رجوع</button>
+        <button onclick="continueAsGuest()" class="btn-outline btn-block">تصفح القائمة كزائر</button>
+      </div>
+    </div>
+
+    <!-- التطبيق الرئيسي -->
+    <div id="mainApp" style="display:none;">
+      
+      <!-- تأكيد الطلب -->
+      <div id="preorderConfirmOverlay" class="preorder-confirm-overlay" style="display:none;" aria-hidden="true">
+        <div class="preorder-confirm-card">
+          <div class="preorder-confirm-icon"><i class="fas fa-check-circle"></i></div>
+          <h3 class="preorder-confirm-title">تم استلام طلبك</h3>
+          <p class="preorder-confirm-num" id="preorderConfirmNumber">#—</p>
+          <p class="preorder-confirm-msg">سنُعلمك عند جاهزية الطلب.</p>
+          <button type="button" class="btn-gold btn-block" onclick="closePreorderConfirm()">حسناً</button>
+        </div>
+      </div>
+
+      <!-- إشعار جاهزية الطلب -->
+      <div id="preorderReadyToast" class="preorder-ready-toast" style="display:none;" role="status">
+        <i class="fas fa-bell"></i>
+        <span>طلبك جاهز للاستلام</span>
+      </div>
+
+      <!-- شريط التنقل السفلي -->
+      <div class="bottom-nav" id="bottomNav">
+        <div class="nav-item active" data-screen="home">
+          <i class="fas fa-home"></i>
+          <span>القائمة</span>
+        </div>
+        <div class="nav-item" data-screen="loyalty">
+          <i class="fas fa-gift"></i>
+          <span>الولاء</span>
+        </div>
+        <div id="navCartItem" class="nav-item nav-item-cart nav-item--hidden" data-screen="cart" aria-hidden="true">
+          <span class="nav-cart-icon-wrap">
+            <i class="fas fa-shopping-bag"></i>
+            <span id="navCartBadge" class="nav-cart-badge" style="display:none;">0</span>
+          </span>
+          <span>سلتي</span>
+        </div>
+        <div class="nav-item" data-screen="profile">
+          <i class="fas fa-user"></i>
+          <span>حسابي</span>
+        </div>
+      </div>
+
+      <!-- المحتوى الرئيسي -->
+      <div class="main-content">
+        
+        <!-- الصفحة الرئيسية -->
+        <div id="homeScreen" class="page-content active">
+          <div class="welcome-header">
+            <h2 class="welcome-title" id="featuredMenuTitle">القائمة المميزة</h2>
+            <p class="welcome-subtitle">متجر</p>
+          </div>
+          
+          <div id="homeBannerSection" class="home-banner-section" style="display:none;">
+            <div id="homeBannerTrack" class="home-banner-track"></div>
+            <div id="homeBannerDots" class="home-banner-dots" aria-label="banner indicators"></div>
+          </div>
+
+          <div class="welcome-card loyalty-invite-card" id="loyaltyInviteCard" onclick="openLoyaltyInvite()" style="display:none;">
+            <div class="welcome-card-content">
+              <div class="welcome-text">
+                <span class="welcome-name">انضم إلى نظام الولاء</span>
+                <span class="welcome-points">احصل على نقاط ومكافآت عند كل طلب</span>
+              </div>
+              <div class="welcome-icon"><i class="fas fa-gift"></i></div>
+            </div>
+          </div>
+
+          <div class="welcome-card" id="loyaltyStatusCard" style="display:none;">
+            <div class="welcome-card-content">
+              <div class="welcome-text">
+                <span class="welcome-name" id="homeName">العميل</span>
+                <span class="welcome-points">لديك <span id="homePoints">0</span> نقطة</span>
+              </div>
+              <div class="welcome-icon"><i class="fas fa-gift"></i></div>
+            </div>
+          </div>
+          
+          <div id="menuCategoriesView" class="menu-view active">
+            <div class="section-header">
+              <h3><i class="fas fa-list"></i> اختر الفئة</h3>
+              <span class="section-badge">Premium</span>
+            </div>
+            <div class="category-cards-grid" id="menuCategories"></div>
+          </div>
+
+          <div id="menuProductsView" class="menu-view">
+            <div class="section-header">
+              <button class="menu-back-btn" onclick="goBackToCategories()">
+                <i class="fas fa-arrow-right"></i>
+                <span>رجوع</span>
+              </button>
+              <span class="section-badge" id="productsCountBadge">0 منتج</span>
+            </div>
+            <h3 class="category-view-title" id="activeCategoryTitle">الفئة</h3>
+            <p class="category-view-description" id="activeCategoryDescription"></p>
+            <div class="premium-products-grid" id="premiumProductsGrid"></div>
+          </div>
+
+          <section id="contactUsSection" class="contact-us-section" style="display:none;">
+            <div class="section-header">
+              <h3><i class="fas fa-link"></i> تواصل معنا</h3>
+            </div>
+            <div class="contact-icons-grid" id="contactIconsGrid"></div>
+          </section>
+        </div>
+
+        <!-- صفحة الولاء -->
+        <div id="loyaltyScreen" class="page-content">
+          <div id="loyaltyIntro" class="loyalty-intro-card">
+            <div class="loyalty-intro-glow"></div>
+            <div class="loyalty-intro-content">
+              <div id="loyaltyIntroIllustrationWrap" class="loyalty-intro-illustration-wrap" style="display:none;">
+                <img id="loyaltyIntroIllustration" class="loyalty-intro-illustration" alt="loyalty intro illustration" loading="lazy">
+              </div>
+              <h2 class="loyalty-intro-title" id="loyaltyIntroTitle">✨ ما هو برنامج الولاء؟</h2>
+              <p class="loyalty-intro-subtitle" id="loyaltyIntroSubtitle">انضم الآن واجمع النقاط بسهولة</p>
+              <p class="loyalty-intro-description" id="loyaltyIntroDescription">كل طلب منك يقرّبك من مكافآت مميزة.</p>
+              <div class="loyalty-intro-list" id="loyaltyIntroList">
+                <div class="intro-item"><i class="fas fa-star"></i><span>اجمع النقاط مع كل زيارة</span></div>
+                <div class="intro-item"><i class="fas fa-gift"></i><span>احصل على مكافآت مجانية</span></div>
+                <div class="intro-item"><i class="fas fa-chart-line"></i><span>تابع تقدمك بسهولة</span></div>
+                <div class="intro-item"><i class="fas fa-crown"></i><span>استمتع بتجربة ولاء مميزة</span></div>
+              </div>
+              <button onclick="openLoyaltyAuth()" class="btn-gold loyalty-cta-btn" id="loyaltyIntroCtaBtn">ابدأ رحلتك</button>
+            </div>
+          </div>
+
+          <div id="loyaltyContent">
+            <div class="hero-image-card" id="heroImageCard">
+              <div class="hero-overlay" id="heroImageOverlay"></div>
+              <div class="hero-content">
+                <h2 class="hero-title" id="loyaltyHeroTitle">بطاقة الولاء</h2>
+                <p class="hero-card-desc" id="loyaltyCardSubtitle"></p>
+                <p class="hero-subtitle" id="loyaltyHeroReward">كل زيارة تقربك من مكافأتك</p>
+                <div class="hero-user-info">
+                  <span class="hero-name" id="heroName">العميل</span>
+                  <div class="hero-code-wrapper">
+                    <span class="hero-code-label">رقم الولاء</span>
+                    <span class="hero-code" id="heroCode">00000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="points-card">
+              <div class="points-icon" id="loyaltyPointsIcon">
+                <span class="points-icon-svg" id="loyaltyPointsIconDisplay" aria-hidden="true"></span>
+              </div>
+              <div class="points-text">
+                <span class="points-label" id="loyaltyPointsLabel">نقاطك الحالية</span>
+                <div class="points-number-large">
+                  <span class="points-big" id="loyaltyPoints">0</span>
+                  <span class="points-from">من</span>
+                  <span class="points-total" id="pointsTotal">6</span>
+                  <span class="points-unit">نقاط</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="progress-steps">
+              <div class="steps-container" id="stepsContainer"></div>
+              <div id="loyaltyBarWrap" class="loyalty-bar-wrap" style="display: none;">
+                <div class="loyalty-bar-track">
+                  <div class="loyalty-bar-fill" id="loyaltyBarFill"></div>
+                </div>
+              </div>
+              <div id="loyaltySegmentsWrap" class="loyalty-segments-wrap" style="display: none;"></div>
+              <div id="loyaltyMinimalWrap" class="loyalty-minimal-wrap" style="display: none;">
+                <div class="loyalty-minimal-count"><span id="loyaltyMinimalVisits">0</span> / <span id="loyaltyMinimalTotal">6</span></div>
+                <div class="loyalty-minimal-label" id="loyaltyMinimalLabel">تقدمك الحالي</div>
+              </div>
+              <div class="progress-message" id="progressMessage">
+                <span class="progress-msg-icon" id="progressMessageIcon" aria-hidden="true"></span>
+                <span id="progressText">ابدأ بجمع النقاط</span>
+              </div>
+            </div>
+
+            <section id="rewardsShowcaseSection" class="rewards-showcase-section" style="display:none;">
+              <div class="section-header">
+                <h3><i class="fas fa-award"></i> المكافآت المتاحة</h3>
+              </div>
+              <div id="rewardsShowcaseGrid" class="rewards-showcase-grid"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- صفحة السلة -->
+        <div id="cartScreen" class="page-content cart-page">
+          <div class="cart-page-scroll">
+            <div class="cart-page-header">
+              <h2 class="cart-page-title">سلتي</h2>
+              <p class="cart-page-subtitle">راجع طلبك وأضف ملاحظة للكاشير ثم أرسل الطلب</p>
+            </div>
+            <section id="activeOrderTrackSection" class="active-order-track" hidden aria-live="polite">
+              <div id="activeOrderTrackInner" class="active-order-card">
+                <p class="active-order-label">طلبك الحالي</p>
+                <p id="activeOrderNumberDisplay" class="active-order-number" dir="ltr">#—</p>
+                <p class="active-order-cashier-hint"><i class="fas fa-receipt"></i> اعرض هذا الرقم للكاشير</p>
+                <p id="activeOrderStatusText" class="active-order-status">—</p>
+                <div class="order-progress">
+                  <div class="order-progress-bar-wrap" aria-hidden="true">
+                    <div id="activeOrderProgressFill" class="order-progress-bar-fill"></div>
+                  </div>
+                  <ol id="activeOrderProgressSteps" class="order-progress-steps">
+                    <li data-step="pending"><span class="order-step-dot"></span><span class="order-step-label">جديد</span></li>
+                    <li data-step="preparing"><span class="order-step-dot"></span><span class="order-step-label">تجهيز</span></li>
+                    <li data-step="ready"><span class="order-step-dot"></span><span class="order-step-label">جاهز</span></li>
+                    <li data-step="done"><span class="order-step-dot"></span><span class="order-step-label">تم</span></li>
+                  </ol>
+                </div>
+              </div>
+            </section>
+            <div id="cartActiveOrderBanner" class="cart-active-order-banner" style="display:none;" aria-hidden="true">
+              <p class="cart-active-order-title"><i class="fas fa-hourglass-half"></i> لديك طلب جاري</p>
+              <p class="cart-active-order-sub">لا يمكنك إضافة منتجات أو إرسال طلب جديد حتى يكتمل الطلب الحالي.</p>
+            </div>
+            <div id="cartGuestHint" class="cart-guest-hint" style="display:none;">
+              <p><i class="fas fa-info-circle"></i> سجّل الدخول لإضافة منتجات وإرسال الطلب.</p>
+              <button type="button" class="btn-gold btn-sm cart-login-btn" onclick="openLoyaltyAuth()">تسجيل الدخول</button>
+            </div>
+            <div id="cartEmptyState" class="cart-empty-state">
+              <div class="cart-empty-icon"><i class="fas fa-shopping-basket"></i></div>
+              <p class="cart-empty-title">السلة فارغة</p>
+              <p class="cart-empty-hint">اختر منتجات من القائمة واضغط ➕ للإضافة</p>
+            </div>
+            <div id="cartItemsList" class="cart-items-list" aria-live="polite"></div>
+          </div>
+          <div class="cart-page-footer">
+            <label class="cart-note-label" for="cartOrderNoteInput">ملاحظة <span class="cart-note-optional">(اختياري)</span></label>
+            <textarea id="cartOrderNoteInput" class="cart-order-note-input" rows="2" maxlength="400" placeholder="مثال: بدون سكر، حار زيادة…" autocomplete="off"></textarea>
+            <div class="cart-total-bar">
+              <span class="cart-total-label">الإجمالي</span>
+              <span id="cartTotalDisplay" class="cart-total-value">0 <span class="riyal-inline">ر.س</span></span>
+            </div>
+            <button type="button" id="cartSubmitBtn" class="btn-gold cart-submit-btn" onclick="submitPreorder()" disabled>إرسال الطلب</button>
+          </div>
+        </div>
+
+        <!-- صفحة حسابي -->
+        <div id="profileScreen" class="page-content">
+          <div class="profile-card">
+            <div class="profile-avatar">
+              <span><i class="far fa-user-circle"></i></span>
+            </div>
+            <h3 class="profile-name" id="profileName">العميل</h3>
+            
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-value" id="profilePoints">0</span>
+                <span class="stat-label">نقاط</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value" id="profileVisits">0</span>
+                <span class="stat-label">زيارة</span>
+              </div>
+            </div>
+            
+            <div class="profile-info">
+              <div class="info-row">
+                <span><i class="fas fa-qrcode"></i> رقم الولاء</span>
+                <span class="code-value" id="profileCode">00000</span>
+              </div>
+              <div class="info-row">
+                <span><i class="fas fa-phone"></i> رقم الجوال</span>
+                <span id="profilePhone">05xxxxxxxx</span>
+              </div>
+            </div>
+            
+            <button onclick="handleProfileAction()" class="logout-btn">
+              <i id="profileActionIcon" class="fas fa-sign-in-alt"></i>
+              <span id="profileActionText">تسجيل</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <audio id="pointSoundClient" preload="auto">
+    <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="preorderReadySound" preload="auto" playsinline>
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- Firebase Config -->
+  <script>
+    window.firebaseConfig = {
+      apiKey: "AIzaSyCjpJ9ateL8w9-L5gBaYiT8JD0WwBrWfwo",
+      authDomain: "coffee-platform-52b80.firebaseapp.com",
+      projectId: "coffee-platform-52b80",
+      storageBucket: "coffee-platform-52b80.firebasestorage.app",
+      messagingSenderId: "868712905693",
+      appId: "1:868712905693:web:3ae6d3d227a3b5901d1434"
+    };
+    const firebaseConfig = window.firebaseConfig;
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+      console.log('✅ Firebase initialized');
+    }
+  </script>
+
+  <script src="cafe-context.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
