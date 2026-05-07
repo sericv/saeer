@@ -220,6 +220,12 @@
     .products-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
     .input.input-error, .select.input-error, .textarea.input-error { border-color: #c62839; box-shadow: 0 0 0 2px rgba(198, 40, 57, 0.12); }
     .field-hint-error { font-size: 12px; color: #c62839; margin-top: 4px; }
+    .option-groups-editor { display: grid; gap: 8px; margin-top: 10px; }
+    .option-group-card { border: 1px solid var(--border-light); border-radius: 12px; background: #fff; padding: 10px; }
+    .option-group-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .option-group-title { font-size: 13px; font-weight: 800; color: var(--text-dark); }
+    .option-item-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; border:1px solid var(--border-light); border-radius:10px; padding:7px 8px; margin-bottom:6px; background: rgba(255,255,255,0.9); }
+    .option-item-row:last-child { margin-bottom: 0; }
 
     .customization-loyalty-grid {
       display: grid;
@@ -882,8 +888,8 @@
                 <div class="field-group"><textarea id="rewardDescriptionInput" class="textarea" rows="2" placeholder="وصف قصير"></textarea></div>
                 <div class="form-grid">
                   <select id="rewardModeInput" class="select">
-                    <option value="points_based">points_based</option>
-                    <option value="loyalty_completion">loyalty_completion</option>
+                    <option value="points_based">نقاط معينه</option>
+                    <option value="loyalty_completion">عند إكتمال بطاقة الولاء</option>
                   </select>
                   <input id="rewardImageInput" class="input" placeholder="رابط صورة (اختياري)">
                 </div>
@@ -1095,6 +1101,21 @@
         <label class="field-label" for="newProductDescription">الوصف (اختياري)</label>
         <textarea id="newProductDescription" class="textarea" placeholder="وصف المنتج (اختياري)"></textarea>
       </div>
+      <div class="field-group" style="margin-top:10px;">
+        <label class="field-label">خيارات المنتج</label>
+        <div class="form-grid" style="margin-top:6px;">
+          <input id="newOptionGroupTitle" class="input" placeholder="اسم المجموعة (مثل: إضافات)">
+          <select id="newOptionGroupType" class="select">
+            <option value="multi">متعدد الاختيار</option>
+            <option value="single">اختيار واحد</option>
+          </select>
+          <input id="newOptionTitle" class="input" placeholder="اسم الخيار">
+          <input id="newOptionPrice" class="input" placeholder="سعر إضافي" inputmode="decimal">
+          <input id="newOptionImage" class="input" placeholder="رابط صورة الخيار (اختياري)">
+        </div>
+        <button type="button" class="btn btn-soft" style="margin-top:8px;" onclick="addOptionToNewProduct()">إضافة خيار</button>
+        <div id="newProductOptionsEditor" class="option-groups-editor"></div>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;">
         <span class="tiny">منتج جديد</span>
         <input id="newProductIsNew" class="toggle" type="checkbox" aria-label="منتج جديد">
@@ -1185,6 +1206,21 @@
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
         <span class="tiny">منتج جديد</span>
         <input id="editProductIsNew" class="toggle" type="checkbox">
+      </div>
+      <div class="field-group" style="margin-top:10px;">
+        <label class="field-label">خيارات المنتج</label>
+        <div class="form-grid" style="margin-top:6px;">
+          <input id="editOptionGroupTitle" class="input" placeholder="اسم المجموعة">
+          <select id="editOptionGroupType" class="select">
+            <option value="multi">متعدد الاختيار</option>
+            <option value="single">اختيار واحد</option>
+          </select>
+          <input id="editOptionTitle" class="input" placeholder="اسم الخيار">
+          <input id="editOptionPrice" class="input" placeholder="سعر إضافي" inputmode="decimal">
+          <input id="editOptionImage" class="input" placeholder="رابط صورة الخيار (اختياري)">
+        </div>
+        <button type="button" class="btn btn-soft" style="margin-top:8px;" onclick="addOptionToEditProduct()">إضافة خيار</button>
+        <div id="editProductOptionsEditor" class="option-groups-editor"></div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-gold" onclick="saveProductEdit()">حفظ</button>
@@ -1516,6 +1552,8 @@
     let pendingEditProductImageBase64 = "";
     let pendingDeleteCategoryId = null;
     let pendingDeleteProductId = null;
+    let newProductOptionGroupsDraft = [];
+    let editProductOptionGroupsDraft = [];
     let loyaltyBackgroundUnsubscribe = null;
     let contactSettingsUnsubscribe = null;
     let generalSettingsUnsubscribe = null;
@@ -1684,6 +1722,147 @@
       if (!button) return;
       button.classList.toggle("is-loading", isLoading);
       button.disabled = !!isLoading;
+    }
+
+    function normalizeOptionGroups(optionGroups) {
+      const groups = Array.isArray(optionGroups) ? optionGroups : [];
+      return groups.map((g, gi) => ({
+        id: String(g.id || `g_${gi}`),
+        title: String(g.title || "").trim() || "خيارات",
+        type: g.type === "single" ? "single" : "multi",
+        enabled: g.enabled !== false,
+        options: (Array.isArray(g.options) ? g.options : []).map((o, oi) => ({
+          id: String(o.id || `${gi}_${oi}`),
+          title: String(o.title || "").trim() || "خيار",
+          additionalPrice: Math.max(0, Number(o.additionalPrice || 0)),
+          image: String(o.image || "").trim(),
+          enabled: o.enabled !== false
+        })).filter((o) => o.title)
+      })).filter((g) => g.options.length);
+    }
+
+    function getOptionDraft(mode) {
+      return mode === "edit" ? editProductOptionGroupsDraft : newProductOptionGroupsDraft;
+    }
+
+    function setOptionDraft(mode, value) {
+      if (mode === "edit") editProductOptionGroupsDraft = value;
+      else newProductOptionGroupsDraft = value;
+    }
+
+    function renderOptionGroupsEditor(containerId, draft, mode) {
+      const wrap = document.getElementById(containerId);
+      if (!wrap) return;
+      if (!draft.length) {
+        wrap.innerHTML = `<div class="tiny">لا توجد خيارات بعد.</div>`;
+        return;
+      }
+      wrap.innerHTML = draft.map((g, gi) => `
+        <div class="option-group-card">
+          <div class="option-group-head">
+            <div class="option-group-title">${escapeHtml(g.title)} <span class="tiny">(${g.type === "single" ? "اختيار واحد" : "متعدد"})</span></div>
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="icon-btn" onclick="editOptionGroup('${mode}', ${gi})"><i class="fas fa-pen"></i></button>
+              <button type="button" class="icon-btn warn" onclick="removeOptionGroup('${mode}', ${gi})"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          ${g.options.map((o, oi) => `
+            <div class="option-item-row">
+              <div>
+                <strong>${escapeHtml(o.title)}</strong>
+                <span class="tiny"> +${Number(o.additionalPrice || 0).toFixed(2)} ر.س</span>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button type="button" class="icon-btn ${o.enabled ? "gold" : ""}" onclick="toggleOptionEnabled('${mode}', ${gi}, ${oi})"><i class="fas ${o.enabled ? "fa-eye" : "fa-eye-slash"}"></i></button>
+                <button type="button" class="icon-btn warn" onclick="removeOptionItem('${mode}', ${gi}, ${oi})"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `).join("");
+    }
+
+    function syncOptionEditors() {
+      renderOptionGroupsEditor("newProductOptionsEditor", newProductOptionGroupsDraft, "new");
+      renderOptionGroupsEditor("editProductOptionsEditor", editProductOptionGroupsDraft, "edit");
+    }
+
+    function addOptionToDraft(mode) {
+      const groupTitleEl = document.getElementById(mode === "edit" ? "editOptionGroupTitle" : "newOptionGroupTitle");
+      const groupTypeEl = document.getElementById(mode === "edit" ? "editOptionGroupType" : "newOptionGroupType");
+      const titleEl = document.getElementById(mode === "edit" ? "editOptionTitle" : "newOptionTitle");
+      const priceEl = document.getElementById(mode === "edit" ? "editOptionPrice" : "newOptionPrice");
+      const imageEl = document.getElementById(mode === "edit" ? "editOptionImage" : "newOptionImage");
+      const groupTitle = String(groupTitleEl?.value || "").trim();
+      const groupType = groupTypeEl?.value === "single" ? "single" : "multi";
+      const optionTitle = String(titleEl?.value || "").trim();
+      const additionalPrice = Math.max(0, Number(priceEl?.value || 0));
+      const optionImage = String(imageEl?.value || "").trim();
+      if (!groupTitle || !optionTitle) {
+        showToast("اكتب اسم المجموعة واسم الخيار", "error");
+        return;
+      }
+      const draft = getOptionDraft(mode).slice();
+      const idx = draft.findIndex((g) => g.title === groupTitle);
+      const item = { id: `o_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, title: optionTitle, additionalPrice, image: optionImage, enabled: true };
+      if (idx >= 0) {
+        draft[idx].type = groupType;
+        draft[idx].options.push(item);
+      } else {
+        draft.push({
+          id: `g_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          title: groupTitle,
+          type: groupType,
+          enabled: true,
+          options: [item]
+        });
+      }
+      setOptionDraft(mode, normalizeOptionGroups(draft));
+      syncOptionEditors();
+      if (titleEl) titleEl.value = "";
+      if (priceEl) priceEl.value = "";
+      if (imageEl) imageEl.value = "";
+    }
+
+    function addOptionToNewProduct() { addOptionToDraft("new"); }
+    function addOptionToEditProduct() { addOptionToDraft("edit"); }
+
+    function editOptionGroup(mode, groupIndex) {
+      const draft = getOptionDraft(mode).slice();
+      const g = draft[groupIndex];
+      if (!g) return;
+      const title = window.prompt("اسم المجموعة", g.title);
+      if (!title || !String(title).trim()) return;
+      g.title = String(title).trim();
+      const typeRaw = window.prompt("نوع المجموعة: single أو multi", g.type);
+      g.type = String(typeRaw || g.type).trim().toLowerCase() === "single" ? "single" : "multi";
+      setOptionDraft(mode, normalizeOptionGroups(draft));
+      syncOptionEditors();
+    }
+
+    function removeOptionGroup(mode, groupIndex) {
+      const draft = getOptionDraft(mode).slice();
+      draft.splice(groupIndex, 1);
+      setOptionDraft(mode, normalizeOptionGroups(draft));
+      syncOptionEditors();
+    }
+
+    function toggleOptionEnabled(mode, groupIndex, optionIndex) {
+      const draft = getOptionDraft(mode).slice();
+      const item = draft[groupIndex]?.options?.[optionIndex];
+      if (!item) return;
+      item.enabled = item.enabled === false;
+      setOptionDraft(mode, normalizeOptionGroups(draft));
+      syncOptionEditors();
+    }
+
+    function removeOptionItem(mode, groupIndex, optionIndex) {
+      const draft = getOptionDraft(mode).slice();
+      if (!draft[groupIndex]) return;
+      draft[groupIndex].options.splice(optionIndex, 1);
+      if (!draft[groupIndex].options.length) draft.splice(groupIndex, 1);
+      setOptionDraft(mode, normalizeOptionGroups(draft));
+      syncOptionEditors();
     }
 
     function setLoyaltyPreview(imageUrl) {
@@ -2393,7 +2572,10 @@
               const q = Number(it.quantity || 0) || 0;
               const p = it.price != null ? Number(it.price) : "";
               const priceTxt = p === "" || Number.isNaN(p) ? "" : ` · ${p} ر.س`;
-              return `<li>${name} × ${q}${priceTxt}</li>`;
+              const opts = Array.isArray(it.options) && it.options.length
+                ? `<div class="tiny" style="margin-top:2px;">${it.options.map((op) => `${escapeHtml(op.groupTitle || "خيار")}: ${escapeHtml(op.title || "")}`).join(" • ")}</div>`
+                : "";
+              return `<li>${name} × ${q}${priceTxt}${opts}</li>`;
             })
             .join("")}</ul>`
         : "";
@@ -3204,7 +3386,7 @@
             <img class="thumb" src="${product.image || product.imageUrl || ""}" onerror="this.src=''" alt="">
             <div class="entity-meta">
               <h4>${product.name || "-"} ${(product.mostPopular === true || product.isPopular === true) ? '<span class="badge">الأكثر طلباً</span>' : ''} ${product.isNew === true ? '<span class="badge">جديد</span>' : ''}</h4>
-              <p>${formatPriceWithRiyal(product.price)}${product.calories != null && product.calories !== "" && !Number.isNaN(Number(product.calories)) ? ` · ${escapeHtml(String(product.calories))} سعرة` : ""} — ${getCategoryName(product.categoryId)}</p>
+              <p>${formatPriceWithRiyal(product.price)}${product.calories != null && product.calories !== "" && !Number.isNaN(Number(product.calories)) ? ` · ${escapeHtml(String(product.calories))} سعرة` : ""} — ${getCategoryName(product.categoryId)}${Array.isArray(product.optionGroups) && product.optionGroups.length ? ` · ${product.optionGroups.length} مجموعات خيارات` : ""}</p>
             </div>
           </div>
           <div class="icon-actions">
@@ -3374,9 +3556,9 @@
         errorEl.style.display = "none";
         errorEl.textContent = "";
       }
-      if (!name || !imageUrl || !isValidBase64Image(imageUrl)) {
+      if (!name) {
         if (errorEl) {
-          errorEl.textContent = "يرجى إدخال اسم الفئة واختيار صورة قبل الحفظ.";
+          errorEl.textContent = "يرجى إدخال اسم الفئة.";
           errorEl.style.display = "block";
         }
         return;
@@ -3387,11 +3569,11 @@
         const payload = withCafe({
           name,
           description,
-          image: imageUrl,
           visible: true,
           sortOrder: categories.length + 1,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+        if (imageUrl && isValidBase64Image(imageUrl)) payload.image = imageUrl;
         const optimisticCategory = { id: `tmp_${Date.now()}`, ...payload };
         categories.unshift(optimisticCategory);
         fillCategorySelects();
@@ -3443,18 +3625,20 @@
     async function saveCategoryEdit() {
       if (!editCategoryId) return;
       const imageValue = document.getElementById("editCategoryImage").value.trim();
-      if (!isValidBase64Image(imageValue)) {
-        showToast("يرجى رفع صورة من الجهاز. النظام يقبل Base64 فقط.", "error");
-        return;
-      }
       const catName = document.getElementById("editCategoryName").value.trim();
-      await db.collection("menuCategories").doc(editCategoryId).update({
+      const update = {
         name: catName,
         description: document.getElementById("editCategoryDescription").value.trim(),
-        image: imageValue,
-        imageUrl: firebase.firestore.FieldValue.delete(),
         visible: document.getElementById("editCategoryVisible").checked
-      });
+      };
+      if (imageValue && isValidBase64Image(imageValue)) {
+        update.image = imageValue;
+        update.imageUrl = firebase.firestore.FieldValue.delete();
+      } else {
+        update.image = firebase.firestore.FieldValue.delete();
+        update.imageUrl = firebase.firestore.FieldValue.delete();
+      }
+      await db.collection("menuCategories").doc(editCategoryId).update(update);
       logActivity("category_edit", "تم تعديل فئة", catName);
       closeModals();
       showToast("تم التعديل", "success");
@@ -3487,6 +3671,12 @@
       if (isNew) isNew.checked = false;
       pendingProductImageBase64 = "";
       setNewProductPreview("");
+      newProductOptionGroupsDraft = [];
+      syncOptionEditors();
+      ["newOptionGroupTitle", "newOptionTitle", "newOptionPrice", "newOptionImage"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
       fillCategorySelects();
       const catEl = document.getElementById("newProductCategory");
       if (catEl) catEl.value = "";
@@ -3558,6 +3748,7 @@
       }
 
       const popular = document.getElementById("newProductPopular")?.checked === true;
+      const optionGroups = normalizeOptionGroups(newProductOptionGroupsDraft);
       setButtonLoading(button, true);
       showToast("جاري إضافة المنتج...", "info", 1400);
       try {
@@ -3571,6 +3762,7 @@
           isPopular: popular,
           visible: true,
           mostPopular: popular,
+          optionGroups,
           sortOrder: products.length + 1,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -3594,6 +3786,8 @@
         if (popEl) popEl.checked = false;
         if (newEl) newEl.checked = false;
         pendingProductImageBase64 = "";
+        newProductOptionGroupsDraft = [];
+        syncOptionEditors();
         setNewProductPreview("");
         closeAddProductModal();
         showToast("تم إضافة المنتج ✅");
@@ -3642,6 +3836,12 @@
       document.getElementById("editProductVisible").checked = p.visible !== false;
       document.getElementById("editProductPopular").checked = (p.mostPopular === true || p.isPopular === true);
       document.getElementById("editProductIsNew").checked = p.isNew === true;
+      editProductOptionGroupsDraft = normalizeOptionGroups(p.optionGroups || []);
+      syncOptionEditors();
+      ["editOptionGroupTitle", "editOptionTitle", "editOptionPrice", "editOptionImage"].forEach((id2) => {
+        const el2 = document.getElementById(id2);
+        if (el2) el2.value = "";
+      });
       closeAddProductModal();
       document.getElementById("productModal").classList.add("is-open");
     }
@@ -3674,7 +3874,8 @@
         visible: document.getElementById("editProductVisible").checked,
         mostPopular: popular,
         isPopular: popular,
-        isNew: document.getElementById("editProductIsNew").checked
+        isNew: document.getElementById("editProductIsNew").checked,
+        optionGroups: normalizeOptionGroups(editProductOptionGroupsDraft)
       };
       if (imageValue) {
         update.image = imageValue;
@@ -3699,6 +3900,8 @@
       editProductId = null;
       pendingEditCategoryImageBase64 = "";
       pendingEditProductImageBase64 = "";
+      editProductOptionGroupsDraft = [];
+      syncOptionEditors();
     }
 
     function allowDrop(event) { event.preventDefault(); }
@@ -3840,6 +4043,12 @@
     window.executeDeleteProduct = executeDeleteProduct;
     window.savePreOrderToggle = savePreOrderToggle;
     window.savePreOrderWorkingHours = savePreOrderWorkingHours;
+    window.addOptionToNewProduct = addOptionToNewProduct;
+    window.addOptionToEditProduct = addOptionToEditProduct;
+    window.editOptionGroup = editOptionGroup;
+    window.removeOptionGroup = removeOptionGroup;
+    window.toggleOptionEnabled = toggleOptionEnabled;
+    window.removeOptionItem = removeOptionItem;
     window.checkCashierLogin = checkCashierLogin;
     window.logout = logout;
 
