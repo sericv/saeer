@@ -76,6 +76,9 @@ let homeBannerEnabled = true;
 let homeBannerIndex = 0;
 let homeBannerTimer = null;
 let homeBannerTouchStartX = null;
+let preOrderWorkingHoursEnabled = false;
+let preOrderOpenTime = "08:00";
+let preOrderCloseTime = "00:00";
 /** @type {{ productId: string, name: string, price: number, image: string, quantity: number }[]} */
 let cartLines = [];
 let activeOrderUnsubscribe = null;
@@ -699,7 +702,7 @@ function renderProductsGrid() {
   }
 
   const allowCartUi = preOrderEnabled && preorderGeneralSettingsLoaded;
-  const showQuickAdd = allowCartUi && !isCustomerPreorderCartLockedForUi();
+  const showQuickAdd = allowCartUi && isPreorderAvailableNow() && !isCustomerPreorderCartLockedForUi();
   grid.innerHTML = filteredProducts
     .map(product => `
       <article class="premium-product-card${allowCartUi ? " premium-product-card--cart" : ""}">
@@ -903,8 +906,9 @@ function clearHomeBannerTimer() {
 function goToHomeBanner(index) {
   if (!homeBanners.length) return;
   homeBannerIndex = (index + homeBanners.length) % homeBanners.length;
-  const track = document.getElementById("homeBannerTrack");
-  if (track) track.style.transform = `translateX(-${homeBannerIndex * 100}%)`;
+  document.querySelectorAll(".home-banner-slide").forEach((slide, i) => {
+    slide.classList.toggle("is-active", i === homeBannerIndex);
+  });
   document.querySelectorAll(".home-banner-dot").forEach((dot, i) => {
     dot.classList.toggle("active", i === homeBannerIndex);
   });
@@ -946,7 +950,12 @@ function renderHomeBanners() {
   if (homeBannerIndex >= homeBanners.length) homeBannerIndex = 0;
   track.innerHTML = homeBanners.map((b) => `
     <div class="home-banner-slide">
-      <img class="home-banner-image" src="${b.image}" alt="${String(b.title || "banner")}" loading="lazy" decoding="async">
+      <img class="home-banner-image" src="${b.image}" alt="${String(b.title || "banner")}" loading="eager" fetchpriority="high" decoding="async">
+      <div class="home-banner-layer"></div>
+      <div class="home-banner-content">
+        ${b.title ? `<h3 class="home-banner-title">${String(b.title)}</h3>` : ""}
+        ${b.subtitle ? `<p class="home-banner-subtitle">${String(b.subtitle)}</p>` : ""}
+      </div>
     </div>
   `).join("");
   dots.innerHTML = homeBanners.map((_, i) => `<button class="home-banner-dot ${i === homeBannerIndex ? "active" : ""}" onclick="window.__goToHomeBanner(${i})"></button>`).join("");
@@ -1012,6 +1021,9 @@ function subscribeGeneralSettings() {
       const data = doc.exists ? doc.data() || {} : {};
       applyFeaturedMenuTitle(data.featuredMenuTitle || "");
       preOrderEnabled = data.preOrderEnabled === true;
+      preOrderWorkingHoursEnabled = data.preOrderWorkingHoursEnabled === true;
+      preOrderOpenTime = String(data.preOrderOpenTime || "08:00");
+      preOrderCloseTime = String(data.preOrderCloseTime || "00:00");
       homeBannerEnabled = data.bannerSliderEnabled !== false;
       homeBanners = Array.isArray(data.homeBanners) ? data.homeBanners : [];
       renderHomeBanners();
@@ -1062,6 +1074,53 @@ function applyPreorderAvailability() {
       switchToScreen("home");
     }
   }
+  updatePreorderStatusUi();
+}
+
+function parseTimeToMinutes(raw) {
+  const src = String(raw || "").trim();
+  if (!/^\d{1,2}:\d{2}$/.test(src)) return null;
+  const parts = src.split(":");
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (!Number.isFinite(h) || !Number.isFinite(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+function isWithinWorkingHoursNow() {
+  if (!preOrderWorkingHoursEnabled) return true;
+  const openMin = parseTimeToMinutes(preOrderOpenTime);
+  const closeMin = parseTimeToMinutes(preOrderCloseTime);
+  if (openMin == null || closeMin == null) return true;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (openMin === closeMin) return true;
+  if (openMin < closeMin) return nowMin >= openMin && nowMin < closeMin;
+  return nowMin >= openMin || nowMin < closeMin;
+}
+
+function isPreorderAvailableNow() {
+  return !!(preorderGeneralSettingsLoaded && preOrderEnabled && isWithinWorkingHoursNow());
+}
+
+function showClosedStoreMessage() {
+  showStyledAlert("المتجر مغلق حالياً، يمكنك تصفح القائمة وسيتم استقبال الطلبات خلال أوقات العمل.", "error");
+}
+
+function updatePreorderStatusUi() {
+  const badge = document.getElementById("preorderStatusBadge");
+  if (!badge) return;
+  if (!preorderGeneralSettingsLoaded || !preOrderEnabled) {
+    badge.style.display = "none";
+    badge.textContent = "";
+    badge.classList.remove("is-open", "is-closed");
+    return;
+  }
+  const openNow = isWithinWorkingHoursNow();
+  badge.style.display = "inline-flex";
+  badge.textContent = openNow ? "مفتوح الآن" : "مغلق حالياً";
+  badge.classList.toggle("is-open", openNow);
+  badge.classList.toggle("is-closed", !openNow);
 }
 
 function isLoggedInForPreorder() {
@@ -1226,7 +1285,7 @@ function updateCartChrome() {
   const submitBtn = document.getElementById("cartSubmitBtn");
   const locked = isCustomerPreorderCartLockedForUi();
   if (submitBtn) {
-    submitBtn.disabled = locked || count === 0 || !isLoggedInForPreorder();
+    submitBtn.disabled = locked || count === 0 || !isLoggedInForPreorder() || !isPreorderAvailableNow();
   }
   const guestHint = document.getElementById("cartGuestHint");
   if (guestHint) guestHint.style.display = currentUserId ? "none" : "block";
@@ -1242,6 +1301,7 @@ function updateCartChrome() {
       listEl.style.display = empty ? "none" : "flex";
     }
   }
+  updatePreorderStatusUi();
 }
 
 function bindCartListDelegation() {
@@ -1307,6 +1367,10 @@ function pulseQuickAdd(productId) {
 
 function cartQuickAdd(productId) {
   if (!preOrderEnabled || !db) return;
+  if (!isPreorderAvailableNow()) {
+    showClosedStoreMessage();
+    return;
+  }
   if (isCustomerPreorderCartLockedForUi()) return;
   if (!requireLoginForPreorder()) return;
   const products = getVisibleProducts();
@@ -1336,6 +1400,10 @@ function cartIncrement(productId) {
   try {
     productId = decodeURIComponent(productId);
   } catch (e) {}
+  if (!isPreorderAvailableNow()) {
+    showClosedStoreMessage();
+    return;
+  }
   if (isCustomerPreorderCartLockedForUi()) return;
   if (!isLoggedInForPreorder()) {
     showStyledAlert("يجب تسجيل الدخول لإرسال الطلب", "error");
@@ -1354,6 +1422,10 @@ function cartDecrement(productId) {
   try {
     productId = decodeURIComponent(productId);
   } catch (e) {}
+  if (!isPreorderAvailableNow()) {
+    showClosedStoreMessage();
+    return;
+  }
   if (isCustomerPreorderCartLockedForUi()) return;
   if (!isLoggedInForPreorder()) {
     showStyledAlert("يجب تسجيل الدخول لإرسال الطلب", "error");
@@ -1521,6 +1593,7 @@ function hideActiveOrderTrackingUi(animate) {
 }
 
 function triggerPreorderReadyUi(orderId) {
+  if (!preorderGeneralSettingsLoaded || !preOrderEnabled || !currentUserId) return;
   if (preorderReadyNotified.has(orderId)) return;
   preorderReadyNotified.add(orderId);
   try {
@@ -1584,6 +1657,8 @@ function subscribeTrackedOrder(orderId) {
         }
 
         const status = String(data.status || "pending").toLowerCase();
+        const isActiveStatus = ACTIVE_CUSTOMER_ORDER_STATUSES.includes(status);
+        if (!isActiveStatus && status !== "done") return;
 
         if (status === "done") {
           setCustomerPreorderCartLocked(false);
@@ -1628,6 +1703,10 @@ function subscribeTrackedOrder(orderId) {
 
 async function submitPreorder() {
   if (!db || !preOrderEnabled) return;
+  if (!isPreorderAvailableNow()) {
+    showClosedStoreMessage();
+    return;
+  }
   if (!requireLoginForPreorder()) return;
   if (!cartLines.length) return;
   if (isCustomerPreorderCartLockedForUi()) {
