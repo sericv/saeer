@@ -81,6 +81,7 @@ let preOrderOpenTime = "08:00";
 let preOrderCloseTime = "00:00";
 /** @type {{ productId: string, name: string, price: number, image: string, quantity: number }[]} */
 let cartLines = [];
+let productOptionsModalState = null;
 let activeOrderUnsubscribe = null;
 let activeOrderDoneHideTimer = null;
 /** True while the logged-in customer has an order with status other than done (from snapshot). */
@@ -530,6 +531,52 @@ function getItemImage(item) {
   return src || MENU_IMAGE_PLACEHOLDER;
 }
 
+function normalizeProductOptionGroups(product) {
+  const groups = Array.isArray(product?.optionGroups) ? product.optionGroups : [];
+  return groups
+    .filter((g) => g && g.enabled !== false && Array.isArray(g.options))
+    .map((g, groupIdx) => ({
+      id: String(g.id || `g_${groupIdx}`),
+      title: String(g.title || "خيارات").trim() || "خيارات",
+      type: g.type === "single" ? "single" : "multi",
+      options: g.options
+        .filter((o) => o && o.enabled !== false)
+        .map((o, optIdx) => ({
+          id: String(o.id || `${groupIdx}_${optIdx}`),
+          title: String(o.title || "خيار").trim() || "خيار",
+          additionalPrice: Math.max(0, Number(o.additionalPrice || 0)),
+          image: String(o.image || "").trim()
+        }))
+        .filter((o) => o.title)
+    }))
+    .filter((g) => g.options.length);
+}
+
+function normalizeSelectedOptionsForStorage(selectedOptions) {
+  const list = Array.isArray(selectedOptions) ? selectedOptions : [];
+  return list
+    .map((o) => ({
+      groupId: String(o.groupId || ""),
+      groupTitle: String(o.groupTitle || "خيارات"),
+      optionId: String(o.optionId || ""),
+      title: String(o.title || "خيار"),
+      additionalPrice: Math.max(0, Number(o.additionalPrice || 0))
+    }))
+    .filter((o) => o.title)
+    .sort((a, b) => `${a.groupId}_${a.optionId}`.localeCompare(`${b.groupId}_${b.optionId}`));
+}
+
+function calculateOptionsExtra(selectedOptions) {
+  return normalizeSelectedOptionsForStorage(selectedOptions).reduce((sum, o) => sum + Number(o.additionalPrice || 0), 0);
+}
+
+function productLineId(productId, selectedOptions) {
+  const normalized = normalizeSelectedOptionsForStorage(selectedOptions);
+  if (!normalized.length) return String(productId);
+  const key = normalized.map((o) => `${o.groupId}:${o.optionId}`).join("|");
+  return `${productId}__${encodeURIComponent(key)}`;
+}
+
 function scheduleMenuRender() {
   if (menuRenderQueued) return;
   menuRenderQueued = true;
@@ -658,8 +705,8 @@ function renderMenuCategories() {
   const products = getVisibleProducts();
   const categoriesWithNewProducts = new Set(products.filter(isNewProduct).map(product => product.categoryId));
   categoriesContainer.innerHTML = categories.map(category => `
-    <article class="category-card" tabindex="0" onclick="openMenuCategory('${category.id}')">
-      <img class="category-card-image" src="${getItemImage(category)}" loading="lazy" alt="${category.name || "فئة"}">
+    <article class="category-card ${getItemImage(category) === MENU_IMAGE_PLACEHOLDER ? "category-card--no-image" : ""}" tabindex="0" onclick="openMenuCategory('${category.id}')">
+      ${getItemImage(category) === MENU_IMAGE_PLACEHOLDER ? "" : `<img class="category-card-image" src="${getItemImage(category)}" loading="lazy" alt="${category.name || "فئة"}">`}
       ${categoriesWithNewProducts.has(category.id) ? `<span class="category-new-badge">جديد</span>` : ""}
       <div class="category-card-overlay"></div>
       <div class="category-card-body">
@@ -705,10 +752,10 @@ function renderProductsGrid() {
   const showQuickAdd = allowCartUi && isPreorderAvailableNow() && !isCustomerPreorderCartLockedForUi();
   grid.innerHTML = filteredProducts
     .map(product => `
-      <article class="premium-product-card${allowCartUi ? " premium-product-card--cart" : ""}">
+      <article class="premium-product-card${allowCartUi ? " premium-product-card--cart" : ""}" onclick="openProductOptionsModal('${product.id}')">
         <img class="premium-product-image" src="${getItemImage(product)}" loading="lazy" alt="${product.name || "منتج"}">
         ${isMostPopular(product) || isNewProduct(product) ? `<div class="product-card-badges">${isMostPopular(product) ? `<span class="menu-popular-badge"><i class="fas fa-fire"></i> الأكثر طلباً</span>` : ""}${isNewProduct(product) ? `<span class="menu-new-badge">جديد</span>` : ""}</div>` : ""}
-        ${showQuickAdd ? `<button type="button" class="product-quick-add" data-quick-add="${product.id}" onclick="cartQuickAdd('${product.id}')" aria-label="إضافة للسلة"><i class="fas fa-plus"></i></button>` : ""}
+        ${showQuickAdd ? `<button type="button" class="product-quick-add" data-quick-add="${product.id}" onclick="openProductOptionsModal('${product.id}', true); event.stopPropagation();" aria-label="إضافة للسلة"><i class="fas fa-plus"></i></button>` : ""}
         <div class="premium-product-body">
           <h4 class="premium-product-name">${product.name || "منتج"}</h4>
           ${formatProductPriceAndCalories(product)}
@@ -717,6 +764,123 @@ function renderProductsGrid() {
       </article>
     `)
     .join("");
+}
+
+function openProductOptionsModal(productId, forceCartIntent) {
+  const product = getVisibleProducts().find((p) => p.id === productId);
+  if (!product) return;
+  const modal = document.getElementById("productOptionsModal");
+  const groupsRoot = document.getElementById("productOptionsGroups");
+  const titleEl = document.getElementById("productOptionsTitle");
+  const descEl = document.getElementById("productOptionsDesc");
+  const imageEl = document.getElementById("productOptionsImage");
+  const addBtn = document.getElementById("productOptionsAddBtn");
+  if (!modal || !groupsRoot || !titleEl || !descEl || !imageEl || !addBtn) return;
+
+  const optionGroups = normalizeProductOptionGroups(product);
+  const cartMode = !!(preOrderEnabled && preorderGeneralSettingsLoaded && isPreorderAvailableNow() && !isCustomerPreorderCartLockedForUi());
+  if (forceCartIntent && cartMode && !optionGroups.length) {
+    if (!requireLoginForPreorder()) return;
+    addConfiguredProductToCart(product, []);
+    persistCartLines();
+    updateCartChrome();
+    renderCartPage();
+    cartSyncProductGridIfNeeded();
+    pulseQuickAdd(product.id);
+    return;
+  }
+
+  productOptionsModalState = {
+    productId: product.id,
+    optionGroups,
+    selectedByGroup: {}
+  };
+  titleEl.textContent = String(product.name || "منتج");
+  descEl.textContent = String(product.description || "");
+  descEl.style.display = descEl.textContent ? "block" : "none";
+  imageEl.src = getItemImage(product);
+  addBtn.textContent = "إضافة للسلة";
+  addBtn.disabled = !cartMode;
+  addBtn.style.display = cartMode ? "block" : "none";
+  groupsRoot.innerHTML = optionGroups.map((g) => `
+    <section class="product-options-group">
+      <h4 class="product-options-group-title">${g.title}</h4>
+      ${g.options.map((o) => `
+        <button type="button" class="product-option-item" data-group-id="${g.id}" data-option-id="${o.id}" onclick="toggleProductOption('${g.id}','${o.id}')">
+          <span class="product-option-item-main">
+            <span class="product-option-dot"><i class="fas fa-check"></i></span>
+            ${o.image ? `<img src="${o.image}" alt="" style="width:24px;height:24px;border-radius:8px;object-fit:cover;border:1px solid var(--border-light);">` : ""}
+            <span class="product-option-title">${o.title}</span>
+          </span>
+          <span class="product-option-price">${o.additionalPrice > 0 ? `+${o.additionalPrice} ر.س` : "مجاني"}</span>
+        </button>
+      `).join("")}
+    </section>
+  `).join("");
+  updateProductOptionsTotal();
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeProductOptionsModal() {
+  const modal = document.getElementById("productOptionsModal");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
+  productOptionsModalState = null;
+}
+
+function toggleProductOption(groupId, optionId) {
+  if (!productOptionsModalState) return;
+  const group = productOptionsModalState.optionGroups.find((g) => g.id === groupId);
+  if (!group) return;
+  const selected = productOptionsModalState.selectedByGroup[groupId] || [];
+  if (group.type === "single") {
+    productOptionsModalState.selectedByGroup[groupId] = [optionId];
+  } else {
+    productOptionsModalState.selectedByGroup[groupId] = selected.includes(optionId)
+      ? selected.filter((id) => id !== optionId)
+      : selected.concat(optionId);
+  }
+  updateProductOptionsTotal();
+}
+
+function getSelectedOptionsFromModalState() {
+  if (!productOptionsModalState) return [];
+  const out = [];
+  productOptionsModalState.optionGroups.forEach((g) => {
+    const selected = productOptionsModalState.selectedByGroup[g.id] || [];
+    selected.forEach((optId) => {
+      const opt = g.options.find((o) => o.id === optId);
+      if (!opt) return;
+      out.push({
+        groupId: g.id,
+        groupTitle: g.title,
+        optionId: opt.id,
+        title: opt.title,
+        additionalPrice: opt.additionalPrice
+      });
+    });
+  });
+  return normalizeSelectedOptionsForStorage(out);
+}
+
+function updateProductOptionsTotal() {
+  if (!productOptionsModalState) return;
+  const product = getVisibleProducts().find((p) => p.id === productOptionsModalState.productId);
+  if (!product) return;
+  const totalEl = document.getElementById("productOptionsTotal");
+  const selected = getSelectedOptionsFromModalState();
+  const total = parseProductPriceNumber(product) + calculateOptionsExtra(selected);
+  if (totalEl) totalEl.textContent = `${total.toFixed(2)} ر.س`;
+
+  document.querySelectorAll(".product-option-item").forEach((el) => {
+    const g = el.getAttribute("data-group-id");
+    const o = el.getAttribute("data-option-id");
+    const isOn = !!(g && o && (productOptionsModalState.selectedByGroup[g] || []).includes(o));
+    el.classList.toggle("is-selected", isOn);
+  });
 }
 
 function setMenuView(view) {
@@ -1175,11 +1339,14 @@ function loadPersistedCart() {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       cartLines = parsed
-        .filter((l) => l && l.productId && Number(l.quantity) > 0)
+        .filter((l) => l && (l.productId || l.lineId) && Number(l.quantity) > 0)
         .map((l) => ({
+          lineId: String(l.lineId || productLineId(String(l.productId || ""), l.selectedOptions || l.options || [])),
           productId: String(l.productId),
           name: String(l.name || "منتج"),
           price: Math.round(Number(l.price) * 100) / 100 || 0,
+          basePrice: Math.round(Number(l.basePrice || l.price || 0) * 100) / 100 || 0,
+          selectedOptions: normalizeSelectedOptionsForStorage(l.selectedOptions || l.options || []),
           image: String(l.image || ""),
           quantity: Math.max(1, parseInt(l.quantity, 10) || 1)
         }));
@@ -1195,8 +1362,8 @@ function persistCartLines() {
   } catch (e) {}
 }
 
-function cartLineIndex(productId) {
-  return cartLines.findIndex((l) => l.productId === productId);
+function cartLineIndex(lineId) {
+  return cartLines.findIndex((l) => l.lineId === lineId);
 }
 
 function cartTotals() {
@@ -1335,14 +1502,18 @@ function renderCartPage() {
   list.innerHTML = cartLines
     .map((line) => {
       const imgSrc = line.image && String(line.image).trim() ? String(line.image).replace(/"/g, "&quot;") : MENU_IMAGE_PLACEHOLDER;
-      const pidAttr = encodeURIComponent(line.productId);
+      const pidAttr = encodeURIComponent(line.lineId);
       const nameHtml = escapeHtmlCart(line.name || "منتج");
+      const optionsHtml = Array.isArray(line.selectedOptions) && line.selectedOptions.length
+        ? `<div class="cart-line-meta">${line.selectedOptions.map((o) => `${escapeHtmlCart(o.groupTitle)}: ${escapeHtmlCart(o.title)} (+${Number(o.additionalPrice || 0).toFixed(2)} ر.س)`).join(" • ")}</div>`
+        : "";
       return `
       <div class="cart-line${lineLocked}">
         <img class="cart-line-img" src="${imgSrc}" loading="lazy" alt="">
         <div class="cart-line-body">
           <div class="cart-line-name">${nameHtml}</div>
           <div class="cart-line-meta"><span class="cart-line-unit">${line.price.toFixed(2)} ر.س</span></div>
+          ${optionsHtml}
           <div class="cart-line-controls">
             <button type="button" class="cart-qty-btn" data-cart-dec data-pid="${pidAttr}" aria-label="إنقاص"><i class="fas fa-minus"></i></button>
             <span class="cart-qty-num">${line.quantity}</span>
@@ -1365,6 +1536,26 @@ function pulseQuickAdd(productId) {
   setTimeout(() => btn.classList.remove("product-quick-add--pulse"), 420);
 }
 
+function addConfiguredProductToCart(product, selectedOptions) {
+  const optionsList = normalizeSelectedOptionsForStorage(selectedOptions);
+  const basePrice = parseProductPriceNumber(product);
+  const price = Math.round((basePrice + calculateOptionsExtra(optionsList)) * 100) / 100;
+  const name = String(product.name || "منتج").trim() || "منتج";
+  const image = getItemImage(product);
+  const lineId = productLineId(product.id, optionsList);
+  const idx = cartLineIndex(lineId);
+  if (idx >= 0) {
+    cartLines[idx].quantity += 1;
+    cartLines[idx].price = price;
+    cartLines[idx].basePrice = basePrice;
+    cartLines[idx].name = name;
+    cartLines[idx].image = image;
+    cartLines[idx].selectedOptions = optionsList;
+  } else {
+    cartLines.push({ lineId, productId: product.id, name, price, basePrice, selectedOptions: optionsList, image, quantity: 1 });
+  }
+}
+
 function cartQuickAdd(productId) {
   if (!preOrderEnabled || !db) return;
   if (!isPreorderAvailableNow()) {
@@ -1376,18 +1567,7 @@ function cartQuickAdd(productId) {
   const products = getVisibleProducts();
   const product = products.find((p) => p.id === productId);
   if (!product) return;
-  const price = parseProductPriceNumber(product);
-  const name = String(product.name || "منتج").trim() || "منتج";
-  const image = getItemImage(product);
-  const idx = cartLineIndex(productId);
-  if (idx >= 0) {
-    cartLines[idx].quantity += 1;
-    cartLines[idx].price = price;
-    cartLines[idx].name = name;
-    cartLines[idx].image = image;
-  } else {
-    cartLines.push({ productId, name, price, image, quantity: 1 });
-  }
+  addConfiguredProductToCart(product, []);
   persistCartLines();
   updateCartChrome();
   renderCartPage();
@@ -1453,6 +1633,35 @@ function cartRemoveLine(productId) {
   updateCartChrome();
   renderCartPage();
   cartSyncProductGridIfNeeded();
+}
+
+function confirmProductOptionsSelection() {
+  if (!productOptionsModalState) return;
+  const product = getVisibleProducts().find((p) => p.id === productOptionsModalState.productId);
+  if (!product) return;
+  const selectedOptions = getSelectedOptionsFromModalState();
+  const cartMode = !!(preOrderEnabled && preorderGeneralSettingsLoaded && isPreorderAvailableNow() && !isCustomerPreorderCartLockedForUi());
+  if (cartMode) {
+    if (!requireLoginForPreorder()) return;
+    addConfiguredProductToCart(product, selectedOptions);
+    persistCartLines();
+    updateCartChrome();
+    renderCartPage();
+    cartSyncProductGridIfNeeded();
+    pulseQuickAdd(product.id);
+    bindPreorderAudioUnlockOnce();
+    showStyledAlert("تمت إضافة المنتج", "success");
+  }
+  closeProductOptionsModal();
+}
+
+function setupProductOptionsModal() {
+  const modal = document.getElementById("productOptionsModal");
+  if (!modal || modal.dataset.bound === "1") return;
+  modal.dataset.bound = "1";
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeProductOptionsModal();
+  });
 }
 
 function cafeOrderLetter() {
@@ -1728,7 +1937,9 @@ async function submitPreorder() {
     productId: line.productId,
     name: line.name,
     quantity: line.quantity,
-    price: Math.round(line.price * 100) / 100
+    price: Math.round(line.price * 100) / 100,
+    basePrice: Math.round(Number(line.basePrice || line.price || 0) * 100) / 100,
+    options: normalizeSelectedOptionsForStorage(line.selectedOptions || [])
   }));
   const total = Math.round(cartTotals().total * 100) / 100;
 
@@ -2247,6 +2458,7 @@ async function startMainApp() {
   startContactRealtime();
   startRealtimeListener();
   setupNavigation();
+  setupProductOptionsModal();
   subscribeCustomerCafeMeta();
   subscribeGeneralSettings();
 
@@ -2409,6 +2621,10 @@ window.cartQuickAdd = cartQuickAdd;
 window.cartIncrement = cartIncrement;
 window.cartDecrement = cartDecrement;
 window.cartRemoveLine = cartRemoveLine;
+window.openProductOptionsModal = openProductOptionsModal;
+window.closeProductOptionsModal = closeProductOptionsModal;
+window.toggleProductOption = toggleProductOption;
+window.confirmProductOptionsSelection = confirmProductOptionsSelection;
 window.submitPreorder = submitPreorder;
 window.closePreorderConfirm = closePreorderConfirm;
 window.__goToHomeBanner = goToHomeBanner;
