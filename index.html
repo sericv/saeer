@@ -66,6 +66,26 @@
         <i class="fas fa-bell"></i>
         <span>طلبك جاهز للاستلام</span>
       </div>
+      <div id="productOptionsModal" class="product-options-modal" style="display:none;" aria-hidden="true">
+        <div class="product-options-sheet">
+          <button type="button" class="product-options-close" onclick="closeProductOptionsModal()" aria-label="إغلاق">
+            <i class="fas fa-times"></i>
+          </button>
+          <div class="product-options-head">
+            <img id="productOptionsImage" class="product-options-image" alt="product" loading="lazy">
+            <div>
+              <h3 id="productOptionsTitle" class="product-options-title">المنتج</h3>
+              <p id="productOptionsDesc" class="product-options-desc"></p>
+            </div>
+          </div>
+          <div id="productOptionsGroups" class="product-options-groups"></div>
+          <div class="product-options-total">
+            <span>الإجمالي</span>
+            <strong id="productOptionsTotal">0.00 ر.س</strong>
+          </div>
+          <button type="button" id="productOptionsAddBtn" class="btn-gold btn-block" onclick="confirmProductOptionsSelection()">إضافة للسلة</button>
+        </div>
+      </div>
 
       <!-- شريط التنقل السفلي -->
       <div class="bottom-nav" id="bottomNav">
