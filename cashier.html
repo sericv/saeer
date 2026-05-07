@@ -967,6 +967,26 @@
               </div>
 
               <div class="settings-card">
+                <h4 class="section-title" style="font-size:15px;margin:0;">ساعات العمل</h4>
+                <div class="section-divider"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+                  <span class="tiny">تفعيل ساعات العمل للطلب المسبق</span>
+                  <input id="preOrderWorkingHoursEnabledInput" class="toggle" type="checkbox" onchange="savePreOrderWorkingHours(this)">
+                </div>
+                <div class="form-grid">
+                  <div class="field-group">
+                    <label class="field-label" for="preOrderOpenTimeInput">وقت الفتح</label>
+                    <input id="preOrderOpenTimeInput" class="input" type="time" value="08:00">
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="preOrderCloseTimeInput">وقت الإغلاق</label>
+                    <input id="preOrderCloseTimeInput" class="input" type="time" value="00:00">
+                  </div>
+                </div>
+                <button class="btn btn-soft js-save-btn" style="margin-top:8px;" onclick="savePreOrderWorkingHours(this)">حفظ ساعات العمل</button>
+              </div>
+
+              <div class="settings-card">
                 <h4 class="section-title" style="font-size:15px;margin:0;">الثيمات</h4>
                 <div class="section-divider"></div>
                 <div id="themeCards" class="themes-grid"></div>
@@ -1851,7 +1871,7 @@
       if (!file) return;
       setButtonLoading(button, true);
       try {
-        const image = await compressImageToBase64(file, 620000);
+        const image = await compressImageForBanner(file);
         homeBannersDraft.push({ image, enabled: true, sortOrder: homeBannersDraft.length + 1 });
         renderHomeBannersEditor();
         showToast("تمت إضافة البنر", "success");
@@ -2273,10 +2293,16 @@
         const input = document.getElementById("systemNameInput");
         const titleInput = document.getElementById("featuredMenuTitleInput");
         const preOrderEl = document.getElementById("preOrderEnabledInput");
+        const workingHoursEnabledEl = document.getElementById("preOrderWorkingHoursEnabledInput");
+        const openTimeEl = document.getElementById("preOrderOpenTimeInput");
+        const closeTimeEl = document.getElementById("preOrderCloseTimeInput");
         const bannerEnabledEl = document.getElementById("bannerSliderEnabledInput");
         if (input) input.value = generalSystemNameCache || "";
         if (titleInput) titleInput.value = featuredMenuTitleCache || "";
         if (preOrderEl) preOrderEl.checked = data.preOrderEnabled === true;
+        if (workingHoursEnabledEl) workingHoursEnabledEl.checked = data.preOrderWorkingHoursEnabled === true;
+        if (openTimeEl) openTimeEl.value = String(data.preOrderOpenTime || "08:00");
+        if (closeTimeEl) closeTimeEl.value = String(data.preOrderCloseTime || "00:00");
         if (bannerEnabledEl) bannerEnabledEl.checked = data.bannerSliderEnabled !== false;
         homeBannersDraft = Array.isArray(data.homeBanners) ? data.homeBanners.slice() : [];
         renderHomeBannersEditor();
@@ -2312,6 +2338,26 @@
       } catch (e) {
         console.error("savePreOrderToggle", e);
         showToast("تعذّر حفظ الإعداد.", "error");
+      }
+    }
+
+    async function savePreOrderWorkingHours(buttonOrEl) {
+      const btn = buttonOrEl && buttonOrEl.tagName === "BUTTON" ? buttonOrEl : null;
+      if (btn) setButtonLoading(btn, true);
+      try {
+        await settingsScopedRef("general").set(withCafe({
+          preOrderWorkingHoursEnabled: document.getElementById("preOrderWorkingHoursEnabledInput")?.checked === true,
+          preOrderOpenTime: String(document.getElementById("preOrderOpenTimeInput")?.value || "08:00"),
+          preOrderCloseTime: String(document.getElementById("preOrderCloseTimeInput")?.value || "00:00"),
+          updatedAt: new Date()
+        }), { merge: true });
+        logActivity("settings_update", "تحديث ساعات العمل", "الطلب المسبق");
+        showToast("تم حفظ ساعات العمل ✅");
+      } catch (e) {
+        console.error("savePreOrderWorkingHours", e);
+        showToast("تعذّر حفظ ساعات العمل.", "error");
+      } finally {
+        if (btn) setButtonLoading(btn, false);
       }
     }
 
@@ -2553,6 +2599,56 @@
     /** Compress for menu/category/product so Firestore docs stay under 1 MiB (single image field). */
     function compressImageToJpegForMenu(file) {
       return compressImageToBase64(file, 880000);
+    }
+
+    /** Keep hero banners sharper while respecting Firestore payload limits. */
+    function compressImageForBanner(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        const img = new Image();
+        reader.onload = (e) => {
+          img.src = e.target?.result || "";
+        };
+        reader.onerror = () => reject(new Error("file_read_error"));
+        img.onerror = () => reject(new Error("image_load_error"));
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("canvas_error"));
+            return;
+          }
+          const widthTargets = [1680, 1440, 1280, 1120, 960];
+          const qualityTargets = [0.92, 0.88, 0.82, 0.76];
+          let bestResult = "";
+          for (const maxWidth of widthTargets) {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round(height * (maxWidth / width));
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            for (const quality of qualityTargets) {
+              const compressed = canvas.toDataURL("image/jpeg", quality);
+              bestResult = compressed;
+              if (compressed.length <= 900000) {
+                resolve(compressed);
+                return;
+              }
+            }
+          }
+          if (bestResult && bestResult.length <= 1048487) {
+            resolve(bestResult);
+            return;
+          }
+          reject(new Error("image_too_large"));
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
     function compressImageToBase64(file, maxBytes = 950000) {
@@ -3638,8 +3734,14 @@
       if (sysInput) sysInput.value = generalSystemNameCache || "";
       if (titleInput) titleInput.value = featuredMenuTitleCache || "";
       const preOrderEl = document.getElementById("preOrderEnabledInput");
+      const workingHoursEnabledEl = document.getElementById("preOrderWorkingHoursEnabledInput");
+      const openTimeEl = document.getElementById("preOrderOpenTimeInput");
+      const closeTimeEl = document.getElementById("preOrderCloseTimeInput");
       const bannerEnabledEl = document.getElementById("bannerSliderEnabledInput");
       if (preOrderEl) preOrderEl.checked = generalData.preOrderEnabled === true;
+      if (workingHoursEnabledEl) workingHoursEnabledEl.checked = generalData.preOrderWorkingHoursEnabled === true;
+      if (openTimeEl) openTimeEl.value = String(generalData.preOrderOpenTime || "08:00");
+      if (closeTimeEl) closeTimeEl.value = String(generalData.preOrderCloseTime || "00:00");
       if (bannerEnabledEl) bannerEnabledEl.checked = generalData.bannerSliderEnabled !== false;
       homeBannersDraft = Array.isArray(generalData.homeBanners) ? generalData.homeBanners.slice() : [];
       renderHomeBannersEditor();
@@ -3737,6 +3839,7 @@
     window.closeDeleteProductModal = closeDeleteProductModal;
     window.executeDeleteProduct = executeDeleteProduct;
     window.savePreOrderToggle = savePreOrderToggle;
+    window.savePreOrderWorkingHours = savePreOrderWorkingHours;
     window.checkCashierLogin = checkCashierLogin;
     window.logout = logout;
 
