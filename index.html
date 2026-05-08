@@ -3,7 +3,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes, maximum-scale=5">
   <title>برنامج الولاء</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -378,6 +378,38 @@
   </script>
 
   <script src="cafe-context.js"></script>
+  <script>
+    (function preventDoubleTapZoomKeepPinch() {
+      let lastTapAt = 0;
+      let lastTapX = 0;
+      let lastTapY = 0;
+      const TAP_DELAY_MS = 320;
+      const TAP_MOVE_PX = 24;
+      const editableSelector = "input, textarea, select, [contenteditable=''], [contenteditable='true']";
+
+      document.addEventListener("touchend", (event) => {
+        if (event.touches && event.touches.length > 0) return;
+        if (event.changedTouches && event.changedTouches.length !== 1) return;
+        const target = event.target;
+        if (target && typeof target.closest === "function" && target.closest(editableSelector)) return;
+
+        const touch = event.changedTouches[0];
+        const now = Date.now();
+        const dt = now - lastTapAt;
+        const dx = Math.abs((touch?.clientX ?? 0) - lastTapX);
+        const dy = Math.abs((touch?.clientY ?? 0) - lastTapY);
+        const isLikelyDoubleTap = dt > 0 && dt < TAP_DELAY_MS && dx < TAP_MOVE_PX && dy < TAP_MOVE_PX;
+        if (isLikelyDoubleTap) {
+          event.preventDefault();
+          lastTapAt = 0;
+          return;
+        }
+        lastTapAt = now;
+        lastTapX = touch?.clientX ?? 0;
+        lastTapY = touch?.clientY ?? 0;
+      }, { passive: false });
+    })();
+  </script>
   <script src="app.js"></script>
 
 </body>
