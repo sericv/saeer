@@ -322,9 +322,12 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
+  max-width: 100%;
   image-rendering: auto;
-  transform: scale(1.01);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .home-banner-layer {
@@ -533,9 +536,12 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   background: var(--bg-light);
   transform: scale(1);
   transition: transform 0.35s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .category-card:hover .category-card-image,
@@ -671,12 +677,16 @@ button {
 
 .premium-product-image {
   width: 100%;
+  max-width: 100%;
   height: 126px;
   object-fit: cover;
+  object-position: center;
   background: var(--bg-light);
   border-radius: 0 0 14px 14px;
   transform: scale(1);
   transition: transform 0.3s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .premium-product-card:hover .premium-product-image {
@@ -952,8 +962,10 @@ button {
 
 .loyalty-intro-illustration {
   width: 100%;
+  max-width: 100%;
   max-height: 180px;
   object-fit: cover;
+  object-position: center;
   display: block;
 }
 
@@ -1713,7 +1725,9 @@ button {
   height: 82px;
   border-radius: 14px;
   object-fit: cover;
+  object-position: center;
   background: var(--bg-muted);
+  flex-shrink: 0;
 }
 
 .product-options-title {
