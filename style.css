@@ -279,11 +279,11 @@ button {
   position: relative;
   border-radius: 28px;
   overflow: hidden;
-  box-shadow: 0 22px 40px rgba(25, 18, 12, 0.18);
-  margin-bottom: 16px;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(242, 233, 220, 0.88));
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  max-height: 300px;
+  box-shadow: 0 24px 46px rgba(25, 18, 12, 0.2);
+  margin-bottom: 18px;
+  background: var(--bg-muted);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  max-height: 220px;
   opacity: 1;
   transform: translateY(0);
   transition: max-height 0.35s ease, opacity 0.28s ease, margin-bottom 0.35s ease, transform 0.35s ease;
@@ -299,7 +299,8 @@ button {
 
 .home-banner-track {
   position: relative;
-  min-height: 250px;
+  min-height: 155px;
+  aspect-ratio: 16 / 6;
   touch-action: pan-y;
 }
 
@@ -330,36 +331,30 @@ button {
   backface-visibility: hidden;
 }
 
-.home-banner-layer {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(128deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.2) 44%, rgba(0, 0, 0, 0.45) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.22) 100%);
-}
-
 .home-banner-content {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
   z-index: 3;
-  padding: 18px 16px;
+  padding: 16px 16px 18px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0.16) 100%);
 }
 
 .home-banner-title {
   color: #fff;
-  font-size: 21px;
+  font-size: 23px;
   font-weight: 800;
   line-height: 1.2;
   margin: 0 0 4px;
-  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
 }
 
 .home-banner-subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 12px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12.5px;
   line-height: 1.45;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
 }
 
 .home-banner-dots {
@@ -678,11 +673,12 @@ button {
 .premium-product-image {
   width: 100%;
   max-width: 100%;
-  height: 126px;
+  height: auto;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   object-position: center;
   background: var(--bg-light);
-  border-radius: 0 0 14px 14px;
+  border-radius: 0;
   transform: scale(1);
   transition: transform 0.3s ease;
   -webkit-backface-visibility: hidden;
@@ -694,7 +690,7 @@ button {
 }
 
 .premium-product-body {
-  padding: 9px 9px 10px;
+  padding: 11px 10px 12px;
 }
 
 .premium-product-name {
@@ -2353,6 +2349,9 @@ button {
 }
 
 @media (max-width: 360px) {
+  .home-banner-track {
+    min-height: 138px;
+  }
   .category-card {
     min-height: 112px;
   }
