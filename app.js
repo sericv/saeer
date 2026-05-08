@@ -1117,14 +1117,16 @@ function renderHomeBanners() {
   track.innerHTML = homeBanners.map((b, i) => `
     <div class="home-banner-slide">
       <img class="home-banner-image" src="${b.image}" alt="${String(b.title || "banner")}" loading="${i === 0 ? "eager" : "lazy"}" fetchpriority="${i === 0 ? "high" : "low"}" decoding="async">
-      <div class="home-banner-layer"></div>
       <div class="home-banner-content">
         ${b.title ? `<h3 class="home-banner-title">${String(b.title)}</h3>` : ""}
         ${b.subtitle ? `<p class="home-banner-subtitle">${String(b.subtitle)}</p>` : ""}
       </div>
     </div>
   `).join("");
-  dots.innerHTML = homeBanners.map((_, i) => `<button class="home-banner-dot ${i === homeBannerIndex ? "active" : ""}" onclick="window.__goToHomeBanner(${i})"></button>`).join("");
+  dots.style.display = homeBanners.length > 1 ? "flex" : "none";
+  dots.innerHTML = homeBanners.length > 1
+    ? homeBanners.map((_, i) => `<button class="home-banner-dot ${i === homeBannerIndex ? "active" : ""}" onclick="window.__goToHomeBanner(${i})"></button>`).join("")
+    : "";
   goToHomeBanner(homeBannerIndex);
   setupHomeBannerTouch();
   ensureHomeBannerAutoplay();
