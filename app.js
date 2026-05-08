@@ -706,7 +706,7 @@ function renderMenuCategories() {
   const categoriesWithNewProducts = new Set(products.filter(isNewProduct).map(product => product.categoryId));
   categoriesContainer.innerHTML = categories.map(category => `
     <article class="category-card ${getItemImage(category) === MENU_IMAGE_PLACEHOLDER ? "category-card--no-image" : ""}" tabindex="0" onclick="openMenuCategory('${category.id}')">
-      ${getItemImage(category) === MENU_IMAGE_PLACEHOLDER ? "" : `<img class="category-card-image" src="${getItemImage(category)}" loading="lazy" alt="${category.name || "فئة"}">`}
+      ${getItemImage(category) === MENU_IMAGE_PLACEHOLDER ? "" : `<img class="category-card-image" src="${getItemImage(category)}" alt="${category.name || "فئة"}" loading="lazy" decoding="async">`}
       ${categoriesWithNewProducts.has(category.id) ? `<span class="category-new-badge">جديد</span>` : ""}
       <div class="category-card-overlay"></div>
       <div class="category-card-body">
@@ -753,7 +753,7 @@ function renderProductsGrid() {
   grid.innerHTML = filteredProducts
     .map(product => `
       <article class="premium-product-card${allowCartUi ? " premium-product-card--cart" : ""}" onclick="openProductOptionsModal('${product.id}')">
-        <img class="premium-product-image" src="${getItemImage(product)}" loading="lazy" alt="${product.name || "منتج"}">
+        <img class="premium-product-image" src="${getItemImage(product)}" alt="${product.name || "منتج"}" loading="lazy" decoding="async">
         ${isMostPopular(product) || isNewProduct(product) ? `<div class="product-card-badges">${isMostPopular(product) ? `<span class="menu-popular-badge"><i class="fas fa-fire"></i> الأكثر طلباً</span>` : ""}${isNewProduct(product) ? `<span class="menu-new-badge">جديد</span>` : ""}</div>` : ""}
         ${showQuickAdd ? `<button type="button" class="product-quick-add" data-quick-add="${product.id}" onclick="openProductOptionsModal('${product.id}', true); event.stopPropagation();" aria-label="إضافة للسلة"><i class="fas fa-plus"></i></button>` : ""}
         <div class="premium-product-body">
@@ -799,6 +799,8 @@ function openProductOptionsModal(productId, forceCartIntent) {
   descEl.textContent = String(product.description || "");
   descEl.style.display = descEl.textContent ? "block" : "none";
   imageEl.src = getItemImage(product);
+  imageEl.loading = "eager";
+  imageEl.decoding = "async";
   addBtn.textContent = "إضافة للسلة";
   addBtn.disabled = !cartMode;
   addBtn.style.display = cartMode ? "block" : "none";
@@ -809,7 +811,7 @@ function openProductOptionsModal(productId, forceCartIntent) {
         <button type="button" class="product-option-item" data-group-id="${g.id}" data-option-id="${o.id}" onclick="toggleProductOption('${g.id}','${o.id}')">
           <span class="product-option-item-main">
             <span class="product-option-dot"><i class="fas fa-check"></i></span>
-            ${o.image ? `<img src="${o.image}" alt="" style="width:24px;height:24px;border-radius:8px;object-fit:cover;border:1px solid var(--border-light);">` : ""}
+            ${o.image ? `<img src="${o.image}" alt="" loading="lazy" decoding="async" style="width:24px;height:24px;border-radius:8px;object-fit:cover;border:1px solid var(--border-light);">` : ""}
             <span class="product-option-title">${o.title}</span>
           </span>
           <span class="product-option-price">${o.additionalPrice > 0 ? `+${o.additionalPrice} ر.س` : "مجاني"}</span>
@@ -1112,9 +1114,9 @@ function renderHomeBanners() {
   section.style.display = "block";
   homeBanners = list;
   if (homeBannerIndex >= homeBanners.length) homeBannerIndex = 0;
-  track.innerHTML = homeBanners.map((b) => `
+  track.innerHTML = homeBanners.map((b, i) => `
     <div class="home-banner-slide">
-      <img class="home-banner-image" src="${b.image}" alt="${String(b.title || "banner")}" loading="eager" fetchpriority="high" decoding="async">
+      <img class="home-banner-image" src="${b.image}" alt="${String(b.title || "banner")}" loading="${i === 0 ? "eager" : "lazy"}" fetchpriority="${i === 0 ? "high" : "low"}" decoding="async">
       <div class="home-banner-layer"></div>
       <div class="home-banner-content">
         ${b.title ? `<h3 class="home-banner-title">${String(b.title)}</h3>` : ""}
@@ -1509,7 +1511,7 @@ function renderCartPage() {
         : "";
       return `
       <div class="cart-line${lineLocked}">
-        <img class="cart-line-img" src="${imgSrc}" loading="lazy" alt="">
+        <img class="cart-line-img" src="${imgSrc}" alt="" loading="lazy" decoding="async">
         <div class="cart-line-body">
           <div class="cart-line-name">${nameHtml}</div>
           <div class="cart-line-meta"><span class="cart-line-unit">${line.price.toFixed(2)} ر.س</span></div>
@@ -2173,10 +2175,12 @@ function applyLoyaltySettingsToUI() {
       heroCard.style.backgroundImage = `url('${cfg.backgroundImage}')`;
       heroCard.style.backgroundSize = "cover";
       heroCard.style.backgroundPosition = "center";
+      heroCard.style.backgroundRepeat = "no-repeat";
     } else {
       heroCard.style.removeProperty("background-image");
       heroCard.style.removeProperty("background-size");
       heroCard.style.removeProperty("background-position");
+      heroCard.style.removeProperty("background-repeat");
     }
   }
 
@@ -2227,6 +2231,7 @@ function applyLoyaltySettingsToUI() {
   if (introImageWrap && introImage) {
     if (cfg.introIllustration) {
       introImage.src = cfg.introIllustration;
+      introImage.decoding = "async";
       introImageWrap.style.display = "block";
     } else {
       introImage.removeAttribute("src");
