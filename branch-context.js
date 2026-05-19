@@ -5,6 +5,8 @@
 (function (global) {
   const DEFAULT_BRANCH_ID = "main";
   const BRANCH_STORAGE_PREFIX = "saer_branch_";
+  /** Firestore document id of the cafe default branch (set when branches load). */
+  let resolvedDefaultBranchId = null;
 
   function normalizeSlug(raw) {
     return String(raw || "")
@@ -34,18 +36,44 @@
     return null;
   }
 
-  /** Legacy products/categories without branchIds → main branch only. */
+  function setResolvedDefaultBranchId(branchId) {
+    resolvedDefaultBranchId = branchId ? String(branchId).trim() : null;
+  }
+
+  function getResolvedDefaultBranchId() {
+    return resolvedDefaultBranchId || DEFAULT_BRANCH_ID;
+  }
+
+  /** True when viewing the cafe default / main branch (slug "main" or its Firestore id). */
+  function isDefaultBranch(branchId) {
+    const bid = String(branchId || DEFAULT_BRANCH_ID).trim() || DEFAULT_BRANCH_ID;
+    if (bid === DEFAULT_BRANCH_ID) return true;
+    if (resolvedDefaultBranchId && bid === resolvedDefaultBranchId) return true;
+    return false;
+  }
+
+  function branchIdListed(ids, branchId) {
+    const bid = String(branchId || DEFAULT_BRANCH_ID).trim() || DEFAULT_BRANCH_ID;
+    if (ids.includes("all") || ids.includes("*")) return true;
+    if (ids.includes(bid)) return true;
+    if (ids.includes(DEFAULT_BRANCH_ID) && isDefaultBranch(bid)) return true;
+    if (resolvedDefaultBranchId && ids.includes(resolvedDefaultBranchId) && isDefaultBranch(bid)) return true;
+    return false;
+  }
+
+  /** Legacy products/categories without branchIds → default branch only. */
   function entityMatchesBranch(entity, branchId) {
     const bid = String(branchId || DEFAULT_BRANCH_ID).trim() || DEFAULT_BRANCH_ID;
     const ids = normalizeBranchIds(entity && entity.branchIds);
     if (entity && entity.branchId && !ids) {
-      return String(entity.branchId) === bid;
+      const legacy = String(entity.branchId).trim();
+      if (legacy === bid) return true;
+      return isDefaultBranch(bid) && (legacy === DEFAULT_BRANCH_ID || legacy === resolvedDefaultBranchId);
     }
     if (!ids || !ids.length) {
-      return bid === DEFAULT_BRANCH_ID;
+      return isDefaultBranch(bid);
     }
-    if (ids.includes("all") || ids.includes("*")) return true;
-    return ids.includes(bid);
+    return branchIdListed(ids, bid);
   }
 
   function productMatchesBranch(product, branchId) {
@@ -60,7 +88,7 @@
     const cid = String(cafeId || "default").trim();
     const sc = String(scope || "").trim();
     const bid = String(branchId || DEFAULT_BRANCH_ID).trim() || DEFAULT_BRANCH_ID;
-    if (!bid || bid === DEFAULT_BRANCH_ID) return `${cid}_${sc}`;
+    if (isDefaultBranch(bid)) return `${cid}_${sc}`;
     return `${cid}_${bid}_${sc}`;
   }
 
@@ -82,13 +110,14 @@
 
   function getDefaultBranch(branches) {
     const list = Array.isArray(branches) ? branches : [];
-    return (
+    const def =
       list.find((b) => b.isDefault === true) ||
       list.find((b) => b.id === DEFAULT_BRANCH_ID) ||
       list.find((b) => normalizeSlug(b.slug) === DEFAULT_BRANCH_ID) ||
       list[0] ||
-      null
-    );
+      null;
+    setResolvedDefaultBranchId(def ? def.id : DEFAULT_BRANCH_ID);
+    return def;
   }
 
   function getResolvedBranchId(cafeId, branches) {
@@ -135,7 +164,7 @@
   function coerceBranchIdsForSave(selectedIds, fallbackBranchId) {
     const arr = Array.isArray(selectedIds) ? selectedIds.filter(Boolean) : [];
     if (!arr.length) {
-      const fb = String(fallbackBranchId || DEFAULT_BRANCH_ID).trim() || DEFAULT_BRANCH_ID;
+      const fb = String(fallbackBranchId || getResolvedDefaultBranchId()).trim() || getResolvedDefaultBranchId();
       return [fb];
     }
     if (arr.includes("all")) return ["all"];
@@ -151,7 +180,9 @@
     if (!snap.empty) {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const def = getDefaultBranch(list);
-      return def || { id: snap.docs[0].id, ...snap.docs[0].data() };
+      const row = def || { id: snap.docs[0].id, ...snap.docs[0].data() };
+      setResolvedDefaultBranchId(row.id);
+      return row;
     }
     const ref = db.collection("branches").doc();
     const payload = {
@@ -173,7 +204,9 @@
           : new Date()
     };
     await ref.set(payload);
-    return { id: ref.id, ...payload };
+    const created = { id: ref.id, ...payload };
+    setResolvedDefaultBranchId(created.id);
+    return created;
   }
 
   async function loadBranchesForCafe(db, cafeId) {
@@ -188,15 +221,20 @@
         const s2 = await db.collection("branches").where("cafeId", "==", cafeId).get();
         return s2;
       });
-    return snap.docs
+    const list = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
       .filter((b) => b.status !== "inactive" || b.isDefault)
       .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+    getDefaultBranch(list);
+    return list;
   }
 
   global.DEFAULT_BRANCH_ID = DEFAULT_BRANCH_ID;
   global.BranchContext = {
     DEFAULT_BRANCH_ID,
+    setResolvedDefaultBranchId,
+    getResolvedDefaultBranchId,
+    isDefaultBranch,
     normalizeSlug,
     normalizeBranchIds,
     entityMatchesBranch,

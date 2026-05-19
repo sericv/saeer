@@ -39,7 +39,7 @@ async function readBranchSettingsDoc(scope, branchId) {
   const branchRef = settingsScopedRef(scope, bid);
   const branchSnap = await branchRef.get();
   if (branchSnap.exists) return branchSnap;
-  if (bid && bid !== BranchContext.DEFAULT_BRANCH_ID) {
+  if (bid && !BranchContext.isDefaultBranch(bid)) {
     const legacy = await db.collection("settings").doc(`${cafeId}_${scope}`).get();
     if (legacy.exists) return legacy;
   }
@@ -850,6 +850,7 @@ async function initStoreBranches() {
     activeBranchId = BranchContext.getResolvedBranchId(cafeId, storeBranches);
     branchesHydrated = true;
     renderBranchSwitcher();
+    if (menuProductsHydrated || menuCategoriesHydrated) scheduleMenuRender();
   } catch (e) {
     console.error("initStoreBranches", e);
     activeBranchId = BranchContext.DEFAULT_BRANCH_ID;
@@ -1363,7 +1364,7 @@ function subscribeGeneralSettings() {
     async (doc) => {
       preorderGeneralSettingsLoaded = true;
       let data = doc.exists ? doc.data() || {} : {};
-      if (!doc.exists && activeBranchId !== BranchContext.DEFAULT_BRANCH_ID) {
+      if (!doc.exists && !BranchContext.isDefaultBranch(activeBranchId)) {
         const leg = await db.collection("settings").doc(`${cafeId}_general`).get();
         if (leg.exists) data = leg.data() || {};
       }

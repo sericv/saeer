@@ -46,11 +46,13 @@
   }
 
   function getActiveBranchId() {
-    return global.cashierSettingsBranchId || BC().DEFAULT_BRANCH_ID;
+    const stored = global.cashierSettingsBranchId;
+    if (stored && branchesCache.some((b) => b.id === stored)) return stored;
+    return BC().getResolvedDefaultBranchId();
   }
 
   function setActiveBranchId(id) {
-    global.cashierSettingsBranchId = id || BC().DEFAULT_BRANCH_ID;
+    global.cashierSettingsBranchId = id || BC().getResolvedDefaultBranchId();
   }
 
   async function loadQrLibrary() {
@@ -185,7 +187,7 @@
 
   function getSelectedChips(containerId) {
     const wrap = document.getElementById(containerId);
-    if (!wrap) return [BC().DEFAULT_BRANCH_ID];
+    if (!wrap) return [BC().getResolvedDefaultBranchId()];
     const on = [...wrap.querySelectorAll(".branch-chip.is-on")].map((el) => el.getAttribute("data-branch-chip"));
     return BC().coerceBranchIdsForSave(on, getActiveBranchId());
   }
@@ -224,6 +226,15 @@
           branchesCache = snap.docs
             .map((d) => ({ id: d.id, ...d.data() }))
             .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+          BC().getDefaultBranch(branchesCache);
+          const defId = BC().getResolvedDefaultBranchId();
+          if (
+            !global.cashierSettingsBranchId ||
+            global.cashierSettingsBranchId === BC().DEFAULT_BRANCH_ID ||
+            !branchesCache.some((b) => b.id === global.cashierSettingsBranchId)
+          ) {
+            global.cashierSettingsBranchId = defId;
+          }
           renderBranchesList();
           renderBranchSettingsContextSelect();
           if (typeof global.refreshProductBranchChips === "function") global.refreshProductBranchChips();
@@ -239,7 +250,7 @@
     sel.innerHTML = branchesCache
       .map((b) => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name || b.slug)}</option>`)
       .join("");
-    sel.value = branchesCache.some((b) => b.id === cur) ? cur : BC().DEFAULT_BRANCH_ID;
+    sel.value = branchesCache.some((b) => b.id === cur) ? cur : BC().getResolvedDefaultBranchId();
   }
 
   function openCreateModal() {

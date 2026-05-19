@@ -4597,7 +4597,7 @@
           mostPopular: popular,
           optionGroups,
           sortOrder: products.length + 1,
-          branchIds: typeof BranchesAdmin !== "undefined" ? BranchesAdmin.getSelectedChips("newProductBranchChips") : [BranchContext.DEFAULT_BRANCH_ID],
+          branchIds: typeof BranchesAdmin !== "undefined" ? BranchesAdmin.getSelectedChips("newProductBranchChips") : [BranchContext.getResolvedDefaultBranchId()],
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         if (imageValue) payload.image = imageValue;
@@ -4684,7 +4684,7 @@
       document.getElementById("editProductIsNew").checked = p.isNew === true;
       editProductOptionGroupsDraft = normalizeOptionGroups(p.optionGroups || []);
       syncOptionEditors();
-      if (typeof BranchesAdmin !== "undefined") BranchesAdmin.renderBranchSelectorChips("editProductBranchChips", p.branchIds || [BranchContext.DEFAULT_BRANCH_ID]);
+      if (typeof BranchesAdmin !== "undefined") BranchesAdmin.renderBranchSelectorChips("editProductBranchChips", p.branchIds || [BranchContext.getResolvedDefaultBranchId()]);
       ["editOptionGroupTitle", "editOptionTitle", "editOptionPrice", "editOptionImage"].forEach((id2) => {
         const el2 = document.getElementById(id2);
         if (el2) el2.value = "";
@@ -4721,7 +4721,7 @@
         isPopular: popular,
         isNew: document.getElementById("editProductIsNew").checked,
         optionGroups: normalizeOptionGroups(editProductOptionGroupsDraft),
-        branchIds: typeof BranchesAdmin !== "undefined" ? BranchesAdmin.getSelectedChips("editProductBranchChips") : [BranchContext.DEFAULT_BRANCH_ID]
+        branchIds: typeof BranchesAdmin !== "undefined" ? BranchesAdmin.getSelectedChips("editProductBranchChips") : [BranchContext.getResolvedDefaultBranchId()]
       };
       if (imageValue) {
         update.image = imageValue;
