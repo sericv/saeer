@@ -896,7 +896,7 @@
             <h3 class="section-title" style="margin:0;"><i class="fas fa-box-open"></i> إدارة المنتجات</h3>
             <button type="button" class="btn btn-gold" onclick="openAddProductModal()"><i class="fas fa-plus"></i> إضافة منتج</button>
           </div>
-          <p class="tiny" style="margin-bottom:10px;">اضغط على الفئة لعرض منتجاتها أو إخفائها • سحب المنتجات لإعادة الترتيب</p>
+          <p class="tiny" style="margin-bottom:10px;">اضغط على الفئة لعرض منتجاتها أو إخفائها • سحب المنتجات لإعادة الترتيب • من شريط الفروع أسفل كل فئة يمكنك تعيين ظهورها ومنتجاتها دفعة واحدة</p>
           <div style="margin-bottom:10px;">
             <input id="productSearchInput" class="input" placeholder="ابحث عن منتج بالاسم..." oninput="debouncedSetProductSearch(this.value)">
           </div>
@@ -1380,9 +1380,9 @@
           <select id="newProductCategory" class="select"></select>
         </div>
         <div class="field-group" style="grid-column: 1 / -1;">
-          <label class="field-label">الفروع المتاحة</label>
-          <div id="newProductBranchChips" class="branch-chips-wrap"></div>
-          <p class="tiny" style="margin-top:4px;">اختر فرعاً واحداً أو أكثر، أو «كل الفروع»</p>
+          <label class="field-label">الفروع المتاحة للمنتج</label>
+          <div id="newProductBranchChips" class="branch-chips-wrap branch-chips-wrap--modal"></div>
+          <p class="branch-field-hint">اختر الفرع الرئيسي أو الفرع الثاني، أو «كل الفروع» ليظهر المنتج في الجميع</p>
         </div>
       </div>
       <input type="hidden" id="newProductImageUrl" value="">
@@ -1485,9 +1485,10 @@
         <input id="editProductPrice" class="input" placeholder="السعر">
         <input id="editProductCalories" class="input" placeholder="السعرات (اختياري)" inputmode="numeric">
         <select id="editProductCategory" class="select"></select>
-        <div class="field-group" style="margin-top:8px;">
-          <label class="field-label">الفروع المتاحة</label>
-          <div id="editProductBranchChips" class="branch-chips-wrap"></div>
+        <div class="field-group branch-field-group" style="margin-top:8px;">
+          <label class="field-label">الفروع المتاحة للمنتج</label>
+          <div id="editProductBranchChips" class="branch-chips-wrap branch-chips-wrap--modal"></div>
+          <p class="branch-field-hint">اختر الفرع الرئيسي أو الفرع الثاني، أو «كل الفروع»</p>
         </div>
         <input id="editProductImageUrl" class="input" placeholder="صورة المنتج Base64" readonly>
       </div>
@@ -4101,8 +4102,83 @@
         </div>`;
     }
 
-    function buildProductCategoryGroupHtml(categoryKey, title, description, count, catProducts, expanded) {
+    function getCategoryBranchPickerId(categoryKey) {
+      return `catBranchPicker_${String(categoryKey || PRODUCT_UNCATEGORIZED_KEY).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+    }
+
+    function resolveStoredBranchIds(branchIds) {
+      const ids = typeof BranchContext !== "undefined" ? BranchContext.normalizeBranchIds(branchIds) : null;
+      if (!ids || !ids.length) {
+        return typeof BranchContext !== "undefined" ? [BranchContext.getResolvedDefaultBranchId()] : ["main"];
+      }
+      return ids;
+    }
+
+    function summarizeCategoryBranches(category) {
+      if (typeof BranchContext === "undefined" || typeof BranchesAdmin === "undefined") return "الفرع الرئيسي";
+      return BranchContext.summarizeBranchIds(category?.branchIds, BranchesAdmin.branches);
+    }
+
+    async function assignCategoryBranches(categoryKey, pickerId) {
+      if (typeof BranchesAdmin === "undefined") return;
+      const branchIds = BranchesAdmin.getSelectedChips(pickerId);
+      const isUncat = categoryKey === PRODUCT_UNCATEGORIZED_KEY;
+      const catProducts = products.filter(p => {
+        if (isUncat) return !p.categoryId || !categories.some(c => c.id === p.categoryId);
+        return p.categoryId === categoryKey;
+      });
+      if (!catProducts.length && isUncat) {
+        showToast("لا توجد منتجات غير مصنفة", "error");
+        return;
+      }
+      const label = BranchContext.summarizeBranchIds(branchIds, BranchesAdmin.branches);
+      const catName = isUncat ? "غير مصنف" : (categories.find(c => c.id === categoryKey)?.name || "الفئة");
+      if (!confirm(`تعيين «${catName}» و ${catProducts.length} منتج إلى: ${label}؟`)) return;
+      showToast("جاري تحديث الفروع...", "info", 3500);
+      try {
+        const batch = db.batch();
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        if (!isUncat) {
+          batch.update(db.collection("menuCategories").doc(categoryKey), { branchIds, updatedAt: ts });
+          const cat = categories.find(c => c.id === categoryKey);
+          if (cat) cat.branchIds = branchIds;
+        }
+        catProducts.forEach(p => {
+          batch.update(db.collection("menuProducts").doc(p.id), { branchIds, updatedAt: ts });
+          p.branchIds = branchIds;
+        });
+        await batch.commit();
+        logActivity("branch_bulk_assign", "تعيين فروع لفئة", `${catName} → ${label}`);
+        showToast(`تم التحديث: ${catProducts.length} منتج ✅`);
+        scheduleRenderProducts(true);
+      } catch (e) {
+        console.error("assignCategoryBranches", e);
+        showToast("تعذّر تحديث الفروع", "error");
+      }
+    }
+
+    function initCategoryBranchPickers() {
+      if (typeof BranchesAdmin === "undefined") return;
+      document.querySelectorAll(".category-branch-picker").forEach((el) => {
+        const categoryKey = el.getAttribute("data-category-key");
+        if (!categoryKey) return;
+        let selected = resolveStoredBranchIds(null);
+        if (categoryKey === PRODUCT_UNCATEGORIZED_KEY) {
+          const first = products.find(p => !p.categoryId || !categories.some(c => c.id === p.categoryId));
+          if (first) selected = resolveStoredBranchIds(first.branchIds);
+        } else {
+          const cat = categories.find(c => c.id === categoryKey);
+          if (cat) selected = resolveStoredBranchIds(cat.branchIds);
+        }
+        BranchesAdmin.renderBranchSelectorChips(el.id, selected);
+      });
+    }
+
+    function buildProductCategoryGroupHtml(categoryKey, title, description, count, catProducts, expanded, category) {
       const key = escapeHtml(categoryKey);
+      const pickerId = getCategoryBranchPickerId(categoryKey);
+      const branchSummary = category ? summarizeCategoryBranches(category) : summarizeCategoryBranches(catProducts[0]);
+      const safeKey = String(categoryKey).replace(/'/g, "\\'");
       const expandedCls = expanded ? " is-expanded" : "";
       const ariaExpanded = expanded ? "true" : "false";
       const productHtml = catProducts.length
@@ -4114,10 +4190,15 @@
             <i class="fas fa-layer-group" style="color:var(--gold-primary);font-size:18px;"></i>
             <div class="entity-meta">
               <h4>${escapeHtml(title)}</h4>
-              <p>${escapeHtml(description)} · ${count} منتج${count === 1 ? "" : "ات"}</p>
+              <p>${escapeHtml(description)} · ${count} منتج${count === 1 ? "" : "ات"} · <span class="category-branch-badge">${escapeHtml(branchSummary)}</span></p>
             </div>
             <i class="fas fa-chevron-down product-category-chevron" aria-hidden="true"></i>
           </button>
+          <div class="category-branch-bar" onclick="event.stopPropagation()">
+            <div class="category-branch-bar-title"><i class="fas fa-code-branch"></i> تعيين الفئة وكل منتجاتها (${count}) إلى:</div>
+            <div id="${pickerId}" class="branch-chips-wrap category-branch-picker" data-category-key="${key}"></div>
+            <button type="button" class="btn btn-gold btn-sm category-branch-apply" onclick="assignCategoryBranches('${safeKey}', '${pickerId}')"><i class="fas fa-check"></i> تطبيق</button>
+          </div>
           <div class="product-category-body">${productHtml}</div>
         </div>`;
     }
@@ -4157,7 +4238,8 @@
           cat.description || "بدون وصف",
           catProducts.length,
           catProducts,
-          expanded
+          expanded,
+          cat
         ));
       }
 
@@ -4171,7 +4253,8 @@
             "منتجات بدون فئة",
             uncategorized.length,
             uncategorized,
-            expanded
+            expanded,
+            null
           ));
         }
       }
@@ -4181,6 +4264,7 @@
         return;
       }
       container.innerHTML = parts.join("");
+      initCategoryBranchPickers();
     }
 
     async function searchCustomer() {
@@ -4864,6 +4948,7 @@
     window.openAddCategoryModal = openAddCategoryModal;
     window.closeAddCategoryModal = closeAddCategoryModal;
     window.openAddProductModal = openAddProductModal;
+    window.assignCategoryBranches = assignCategoryBranches;
     window.closeAddProductModal = closeAddProductModal;
     window.showPremiumUpgradeModal = showPremiumUpgradeModal;
     window.closePremiumUpgradeModal = closePremiumUpgradeModal;

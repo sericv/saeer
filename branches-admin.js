@@ -161,47 +161,75 @@
       .join("");
   }
 
+  function branchPickerLabel(b) {
+    if (b.isDefault) return b.name || "الفرع الرئيسي";
+    return b.name || b.slug || "فرع";
+  }
+
+  function branchPickerSub(b) {
+    if (b.isDefault) return "الفرع الافتراضي للمتجر";
+    return b.slug ? `رابط: ${escapeHtml(b.slug)}` : "فرع إضافي";
+  }
+
   function renderBranchSelectorChips(containerId, selectedIds, onChangeName) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return;
     const selected = new Set(Array.isArray(selectedIds) ? selectedIds : []);
-    if (!branchesCache.length) {
-      wrap.innerHTML = `<span class="tiny">الفرع الرئيسي (افتراضي)</span>`;
+    const active = branchesCache.filter((b) => b.status !== "inactive");
+    if (!active.length) {
+      wrap.innerHTML = `<div class="branch-picker branch-picker--empty"><span class="branch-picker-card is-on is-locked"><i class="fas fa-store"></i><span class="branch-picker-text"><strong>الفرع الرئيسي</strong><small>افتراضي</small></span></span></div>`;
       return;
     }
-    wrap.innerHTML = branchesCache
-      .filter((b) => b.status !== "inactive")
+    const change = onChangeName || "";
+    const cards = active
       .map((b) => {
         const on = selected.has(b.id) || selected.has("all");
-        const allChip =
-          b.isDefault && branchesCache.length > 1
-            ? ""
-            : "";
-        return `<button type="button" class="branch-chip ${on ? "is-on" : ""}" data-branch-chip="${escapeHtml(b.id)}" onclick="BranchesAdmin.toggleChip('${containerId}', '${escapeHtml(b.id)}', '${onChangeName || ""}')">${escapeHtml(b.name || b.slug)}</button>`;
+        const icon = b.isDefault ? "fa-store" : "fa-location-dot";
+        const id = escapeHtml(b.id);
+        return `<button type="button" class="branch-picker-card ${on ? "is-on" : ""}" data-branch-chip="${id}" onclick="BranchesAdmin.toggleChip('${containerId}', '${id}', '${change}')">
+          <i class="fas ${icon}"></i>
+          <span class="branch-picker-text">
+            <strong>${escapeHtml(branchPickerLabel(b))}</strong>
+            <small>${branchPickerSub(b)}</small>
+          </span>
+          <span class="branch-picker-check" aria-hidden="true"><i class="fas fa-check"></i></span>
+        </button>`;
       })
-      .join("") +
-      (branchesCache.length > 1
-        ? `<button type="button" class="branch-chip ${selected.has("all") ? "is-on" : ""}" data-branch-chip="all" onclick="BranchesAdmin.toggleChip('${containerId}', 'all', '${onChangeName || ""}')">كل الفروع</button>`
-        : "");
+      .join("");
+    const allCard =
+      active.length > 1
+        ? `<button type="button" class="branch-picker-card branch-picker-card--all ${selected.has("all") ? "is-on" : ""}" data-branch-chip="all" onclick="BranchesAdmin.toggleChip('${containerId}', 'all', '${change}')">
+            <i class="fas fa-globe"></i>
+            <span class="branch-picker-text">
+              <strong>كل الفروع</strong>
+              <small>يظهر في جميع الفروع</small>
+            </span>
+            <span class="branch-picker-check" aria-hidden="true"><i class="fas fa-check"></i></span>
+          </button>`
+        : "";
+    wrap.innerHTML = `<div class="branch-picker">${cards}${allCard}</div>`;
   }
 
   function getSelectedChips(containerId) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return [BC().getResolvedDefaultBranchId()];
-    const on = [...wrap.querySelectorAll(".branch-chip.is-on")].map((el) => el.getAttribute("data-branch-chip"));
+    const on = [...wrap.querySelectorAll(".branch-picker-card.is-on, .branch-chip.is-on")].map((el) =>
+      el.getAttribute("data-branch-chip")
+    );
     return BC().coerceBranchIdsForSave(on, getActiveBranchId());
   }
 
   function toggleChip(containerId, branchId, onChangeName) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return;
+    const cards = wrap.querySelectorAll(".branch-picker-card, .branch-chip");
     if (branchId === "all") {
-      wrap.querySelectorAll(".branch-chip").forEach((c) => c.classList.remove("is-on"));
+      cards.forEach((c) => c.classList.remove("is-on"));
       wrap.querySelector('[data-branch-chip="all"]')?.classList.add("is-on");
     } else {
       wrap.querySelector('[data-branch-chip="all"]')?.classList.remove("is-on");
-      const chip = wrap.querySelector(`[data-branch-chip="${branchId}"]`);
-      if (chip) chip.classList.toggle("is-on");
+      const card = wrap.querySelector(`[data-branch-chip="${branchId}"]`);
+      if (card) card.classList.toggle("is-on");
     }
     if (onChangeName && typeof global[onChangeName] === "function") global[onChangeName]();
   }
@@ -403,7 +431,7 @@
       if (!BC().categoryMatchesBranch({ ...data, id: doc.id }, sourceBranchId)) continue;
       const newCat = db.collection("menuCategories").doc();
       catMap[doc.id] = newCat.id;
-      const branchIds = BC().coerceBranchIdsForSave(data.branchIds, newBranchId);
+      const branchIds = BC().branchIdsForDuplicate(data, newBranchId);
       await newCat.set(
         withCafe({
           ...data,
@@ -419,7 +447,7 @@
       const data = doc.data();
       if (!BC().productMatchesBranch({ ...data, id: doc.id }, sourceBranchId)) continue;
       const newProd = db.collection("menuProducts").doc();
-      const branchIds = BC().coerceBranchIdsForSave(data.branchIds, newBranchId);
+      const branchIds = BC().branchIdsForDuplicate(data, newBranchId);
       const categoryId = catMap[data.categoryId] || data.categoryId;
       await newProd.set(
         withCafe({

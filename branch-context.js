@@ -171,6 +171,33 @@
     return [...new Set(arr.map((x) => String(x).trim()).filter(Boolean))];
   }
 
+  /** When duplicating a branch, copied items belong to the new branch (keep "all" as-is). */
+  function branchIdsForDuplicate(entity, newBranchId) {
+    const ids = normalizeBranchIds(entity && entity.branchIds);
+    if (ids && (ids.includes("all") || ids.includes("*"))) return ["all"];
+    const nid = String(newBranchId || "").trim();
+    return nid ? [nid] : [getResolvedDefaultBranchId()];
+  }
+
+  function summarizeBranchIds(branchIds, branches) {
+    const ids = normalizeBranchIds(branchIds);
+    const list = Array.isArray(branches) ? branches : [];
+    if (!ids || !ids.length) {
+      const def = list.find((b) => b.isDefault) || list[0];
+      return def ? def.name || "الفرع الرئيسي" : "الفرع الرئيسي";
+    }
+    if (ids.includes("all") || ids.includes("*")) return "كل الفروع";
+    const names = ids
+      .map((id) => {
+        const b = list.find((x) => x.id === id);
+        if (b) return b.name || b.slug;
+        if (id === DEFAULT_BRANCH_ID) return "الفرع الرئيسي";
+        return null;
+      })
+      .filter(Boolean);
+    return names.length ? names.join(" · ") : "فرع غير محدد";
+  }
+
   /**
    * Ensures at least one default branch exists for the cafe (non-destructive).
    */
@@ -249,6 +276,8 @@
     getBranchName,
     buildCustomerStoreUrl,
     coerceBranchIdsForSave,
+    branchIdsForDuplicate,
+    summarizeBranchIds,
     ensureDefaultBranch,
     loadBranchesForCafe,
     branchStorageKey

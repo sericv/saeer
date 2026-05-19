@@ -2426,6 +2426,141 @@ button {
   gap: 8px;
   margin-top: 6px;
 }
+.branch-chips-wrap--modal {
+  margin-top: 4px;
+}
+.branch-field-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.5;
+}
+.branch-field-group .field-label {
+  margin-bottom: 2px;
+}
+.branch-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.branch-picker-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border: 2px solid var(--border-light);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff 0%, #faf8f5 100%);
+  cursor: pointer;
+  text-align: right;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.branch-picker-card:hover {
+  border-color: color-mix(in srgb, var(--gold-primary) 35%, var(--border-light));
+  transform: translateY(-1px);
+}
+.branch-picker-card.is-on {
+  border-color: var(--gold-primary);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold-primary) 12%, #fff) 0%, #fff 100%);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--gold-primary) 22%, transparent);
+}
+.branch-picker-card--all.is-on {
+  border-color: #2d6a4f;
+  background: linear-gradient(180deg, color-mix(in srgb, #2d6a4f 10%, #fff) 0%, #fff 100%);
+}
+.branch-picker-card i.fas:first-child {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--gold-primary) 14%, #fff);
+  color: var(--gold-primary);
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.branch-picker-card--all i.fas:first-child {
+  background: color-mix(in srgb, #2d6a4f 14%, #fff);
+  color: #2d6a4f;
+}
+.branch-picker-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.branch-picker-text strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.3;
+}
+.branch-picker-text small {
+  font-size: 11px;
+  color: var(--text-light);
+  line-height: 1.35;
+}
+.branch-picker-check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: transparent;
+  background: #fff;
+}
+.branch-picker-card.is-on .branch-picker-check {
+  border-color: var(--gold-primary);
+  background: var(--gold-primary);
+  color: #fff;
+}
+.branch-picker-card--all.is-on .branch-picker-check {
+  border-color: #2d6a4f;
+  background: #2d6a4f;
+}
+.category-branch-bar {
+  margin: 0 12px 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed color-mix(in srgb, var(--gold-primary) 35%, var(--border-light));
+  background: color-mix(in srgb, var(--gold-primary) 6%, #fff);
+}
+.category-branch-bar-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.category-branch-bar .branch-picker {
+  margin-bottom: 10px;
+}
+.category-branch-apply {
+  width: 100%;
+  justify-content: center;
+}
+.category-branch-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold-primary) 14%, #fff);
+  color: var(--text-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
 .branch-chip {
   border: 1px solid var(--border-light);
   background: #fff;
