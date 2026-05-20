@@ -2529,38 +2529,6 @@ button {
   border-color: #2d6a4f;
   background: #2d6a4f;
 }
-.category-branch-bar {
-  margin: 0 12px 10px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px dashed color-mix(in srgb, var(--gold-primary) 35%, var(--border-light));
-  background: color-mix(in srgb, var(--gold-primary) 6%, #fff);
-}
-.category-branch-bar-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.category-branch-bar .branch-picker {
-  margin-bottom: 10px;
-}
-.category-branch-apply {
-  width: 100%;
-  justify-content: center;
-}
-.category-branch-badge {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--gold-primary) 14%, #fff);
-  color: var(--text-dark);
-  font-size: 11px;
-  font-weight: 700;
-}
 .branch-chip {
   border: 1px solid var(--border-light);
   background: #fff;

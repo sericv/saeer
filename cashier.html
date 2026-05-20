@@ -188,6 +188,7 @@
     .entity-card {
       border:1px solid var(--border-light); border-radius:16px; background:#fff; padding:10px;
       display:flex; justify-content:space-between; align-items:center; gap:10px;
+      flex-wrap: wrap;
       content-visibility: auto;
       contain-intrinsic-size: auto 74px;
       contain: layout style paint;
@@ -249,6 +250,192 @@
       color: var(--text-soft);
     }
     .entity-left { display:flex; gap:10px; align-items:center; min-width: 0; }
+    .category-branch-controls {
+      width: 100%;
+      border-top: 1px solid var(--border-light);
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+    .category-branch-controls-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+      font-size:12px;
+      color:var(--text-light);
+      flex-wrap: wrap;
+    }
+    .category-branch-controls-head span {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+      color:var(--text-dark);
+    }
+    .category-branch-controls-head strong {
+      color:var(--gold-primary);
+      font-size:12px;
+    }
+    .category-branch-toggle-row {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .category-branch-toggle {
+      border:1px solid var(--border-light);
+      background:#fff;
+      border-radius:14px;
+      padding:8px 10px;
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
+      cursor:pointer;
+      font-family:inherit;
+      transition:0.2s ease;
+    }
+    .category-branch-toggle-name {
+      font-size:12px;
+      font-weight:800;
+      color:var(--text-dark);
+    }
+    .category-branch-toggle-switch {
+      width:34px;
+      height:20px;
+      border-radius:999px;
+      background:#e8e1d4;
+      position:relative;
+      flex-shrink:0;
+    }
+    .category-branch-toggle-switch::after {
+      content:"";
+      position:absolute;
+      top:3px;
+      right:3px;
+      width:14px;
+      height:14px;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 1px 4px rgba(0,0,0,.16);
+      transition:0.2s ease;
+    }
+    .category-branch-toggle.is-on {
+      border-color: color-mix(in srgb, var(--gold-primary) 50%, var(--border-light));
+      background: color-mix(in srgb, var(--gold-primary) 10%, #fff);
+      box-shadow: 0 4px 12px rgba(201,160,61,.14);
+    }
+    .category-branch-toggle.is-on .category-branch-toggle-switch {
+      background: var(--gold-primary);
+    }
+    .category-branch-toggle.is-on .category-branch-toggle-switch::after {
+      transform: translateX(-14px);
+    }
+    .category-branch-toggle--all.is-on .category-branch-toggle-switch {
+      background:#2d6a4f;
+    }
+    .branch-chips-wrap--modal {
+      margin-top: 4px;
+    }
+    .branch-field-hint {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+    .branch-field-group .field-label {
+      margin-bottom: 2px;
+    }
+    .branch-picker {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      width: 100%;
+    }
+    .branch-picker-card {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 12px 12px 14px;
+      border: 2px solid var(--border-light);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(250,248,245,.95));
+      cursor: pointer;
+      text-align: right;
+      font-family: inherit;
+      transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+    }
+    .branch-picker-card:hover {
+      border-color: color-mix(in srgb, var(--gold-primary) 38%, var(--border-light));
+      transform: translateY(-1px);
+    }
+    .branch-picker-card.is-on {
+      border-color: var(--gold-primary);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--gold-primary) 13%, #fff), #fff);
+      box-shadow: 0 8px 20px rgba(201,160,61,.18);
+    }
+    .branch-picker-card--all.is-on {
+      border-color: #2d6a4f;
+      background: linear-gradient(180deg, color-mix(in srgb, #2d6a4f 11%, #fff), #fff);
+    }
+    .branch-picker-card i.fas:first-child {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--gold-primary) 14%, #fff);
+      color: var(--gold-primary);
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .branch-picker-card--all i.fas:first-child {
+      background: color-mix(in srgb, #2d6a4f 14%, #fff);
+      color: #2d6a4f;
+    }
+    .branch-picker-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+    .branch-picker-text strong {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1.35;
+    }
+    .branch-picker-text small {
+      font-size: 11px;
+      color: var(--text-light);
+      line-height: 1.35;
+    }
+    .branch-picker-check {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--border-light);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: transparent;
+      background: #fff;
+    }
+    .branch-picker-card.is-on .branch-picker-check {
+      border-color: var(--gold-primary);
+      background: var(--gold-primary);
+      color: #fff;
+    }
+    .branch-picker-card--all.is-on .branch-picker-check {
+      border-color: #2d6a4f;
+      background: #2d6a4f;
+    }
     .thumb { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; background: var(--bg-beige); border:1px solid var(--border-light); }
     .entity-meta h4 {
       font-size: 14px;
@@ -1918,16 +2105,15 @@
     }
 
     function productThumbSrc(product) {
-      const src = String(product.image || product.imageUrl || "").trim();
+      const src = String(product._thumbImage || product.image || product.imageUrl || "").trim();
       if (!src) return "";
-      if (src.startsWith("data:") && src.length > PRODUCT_THUMB_MAX_EMBED_LEN) return "";
       return src;
     }
 
     function productsRenderFingerprint() {
       const term = (productSearchTerm || "").toLowerCase();
       const sig = products.map(p =>
-        `${p.id}|${p.visible}|${p.sortOrder}|${(p.name || "").slice(0, 48)}|${p.mostPopular}|${p.isPopular}|${p.isNew}|${p.categoryId}|${p.price}`
+        `${p.id}|${p.visible}|${p.sortOrder}|${(p.name || "").slice(0, 48)}|${p.mostPopular}|${p.isPopular}|${p.isNew}|${p.categoryId}|${p.price}|${String(p._thumbImage || p.image || p.imageUrl || "").slice(0, 32)}`
       ).join(";");
       const expanded = [...expandedProductCategoryIds].sort().join(",");
       const catSig = categories.map(c => `${c.id}|${c.name}`).join(";");
@@ -1999,6 +2185,7 @@
       const img = o.image || o.imageUrl;
       if (typeof img === "string" && img.startsWith("data:") && img.length > PRODUCT_THUMB_MAX_EMBED_LEN) {
         o._strippedImage = true;
+        o._thumbImage = img;
         delete o.image;
         delete o.imageUrl;
       }
@@ -2009,7 +2196,7 @@
       if (overviewRenderRaf) cancelAnimationFrame(overviewRenderRaf);
       overviewRenderRaf = requestAnimationFrame(() => {
         overviewRenderRaf = 0;
-        scheduleRenderOverview();
+        renderOverview();
       });
     }
 
@@ -2869,6 +3056,7 @@
       }
       rewardsDraft = Array.isArray(d.rewards) ? d.rewards.slice() : [];
       renderRewardsEditor();
+      scheduleRenderOverview();
 
       updateCashierLoyaltyPreview();
     }
@@ -3769,12 +3957,20 @@
       });
     }
 
+    function getOverviewRewardsCount() {
+      if (Array.isArray(rewardsDraft) && rewardsDraft.length) {
+        return rewardsDraft.filter(r => r && r.hidden !== true).length;
+      }
+      return rewardsLogs.length;
+    }
+
     function renderOverview() {
-      const key = `${users.length}|${rewardsLogs.length}|${products.length}|${categories.length}`;
+      const rewardsCount = getOverviewRewardsCount();
+      const key = `${users.length}|${rewardsCount}|${products.length}|${categories.length}`;
       if (key === lastOverviewKey) return;
       lastOverviewKey = key;
       updateStatCounter("statCustomers", users.length);
-      updateStatCounter("statRewards", rewardsLogs.length);
+      updateStatCounter("statRewards", rewardsCount);
       updateStatCounter("statProducts", products.length);
       updateStatCounter("statCategories", categories.length);
     }
@@ -4064,9 +4260,117 @@
             <button type="button" class="icon-btn gold" onclick="openCategoryEdit('${catId}')"><i class="fas fa-pen"></i></button>
             <button type="button" class="icon-btn warn" onclick="deleteCategory('${catId}')"><i class="fas fa-trash"></i></button>
           </div>
+          ${buildCategoryBranchControls(cat)}
         </div>`);
       }
       container.innerHTML = parts.join("");
+    }
+
+    function getCategoryBranchIds(category) {
+      const ids = typeof BranchContext !== "undefined" ? BranchContext.normalizeBranchIds(category?.branchIds) : null;
+      if (ids && ids.length) return ids;
+      return typeof BranchContext !== "undefined" ? [BranchContext.getResolvedDefaultBranchId()] : ["main"];
+    }
+
+    function getCategoryBranchesSummary(category) {
+      if (typeof BranchContext === "undefined" || typeof BranchesAdmin === "undefined") return "الفرع الرئيسي";
+      return BranchContext.summarizeBranchIds(category?.branchIds, BranchesAdmin.branches);
+    }
+
+    function buildCategoryBranchControls(category) {
+      if (typeof BranchesAdmin === "undefined" || !Array.isArray(BranchesAdmin.branches) || !BranchesAdmin.branches.length) {
+        return "";
+      }
+      const selected = new Set(getCategoryBranchIds(category));
+      const activeBranches = BranchesAdmin.branches.filter(b => b.status !== "inactive");
+      if (!activeBranches.length) return "";
+      const allOn = selected.has("all");
+      const branchButtons = activeBranches.map(branch => {
+        const branchId = escapeHtml(branch.id);
+        const name = escapeHtml(branch.name || (branch.isDefault ? "الفرع الرئيسي" : "فرع"));
+        const isOn = allOn || selected.has(branch.id);
+        return `
+          <button type="button" class="category-branch-toggle ${isOn ? "is-on" : ""}" onclick="toggleCategoryBranch('${escapeHtml(category.id)}', '${branchId}', event)">
+            <span class="category-branch-toggle-name">${name}</span>
+            <span class="category-branch-toggle-switch" aria-hidden="true"></span>
+          </button>`;
+      }).join("");
+      return `
+        <div class="category-branch-controls" onclick="event.stopPropagation()">
+          <div class="category-branch-controls-head">
+            <span><i class="fas fa-code-branch"></i> تظهر هذه الفئة في</span>
+            <strong>${escapeHtml(getCategoryBranchesSummary(category))}</strong>
+          </div>
+          <div class="category-branch-toggle-row">
+            ${branchButtons}
+            ${activeBranches.length > 1 ? `
+              <button type="button" class="category-branch-toggle category-branch-toggle--all ${allOn ? "is-on" : ""}" onclick="toggleCategoryBranch('${escapeHtml(category.id)}', 'all', event)">
+                <span class="category-branch-toggle-name">كل الفروع</span>
+                <span class="category-branch-toggle-switch" aria-hidden="true"></span>
+              </button>` : ""}
+          </div>
+        </div>`;
+    }
+
+    async function toggleCategoryBranch(categoryId, branchId, event) {
+      if (event) event.stopPropagation();
+      const cat = categories.find(c => c.id === categoryId);
+      if (!cat || typeof BranchContext === "undefined") return;
+      const current = new Set(getCategoryBranchIds(cat));
+      let next;
+      if (branchId === "all") {
+        next = ["all"];
+      } else {
+        current.delete("all");
+        if (current.has(branchId)) current.delete(branchId);
+        else current.add(branchId);
+        next = BranchContext.coerceBranchIdsForSave([...current], BranchContext.getResolvedDefaultBranchId());
+      }
+      const catProducts = products.filter(p => p.categoryId === categoryId);
+      try {
+        const batch = db.batch();
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        batch.update(db.collection("menuCategories").doc(categoryId), { branchIds: next, updatedAt: ts });
+        catProducts.forEach(product => {
+          batch.update(db.collection("menuProducts").doc(product.id), { branchIds: next, updatedAt: ts });
+          product.branchIds = next;
+        });
+        cat.branchIds = next;
+        await batch.commit();
+        const label = BranchContext.summarizeBranchIds(next, typeof BranchesAdmin !== "undefined" ? BranchesAdmin.branches : []);
+        showToast(`تم تحديث فروع «${cat.name || "الفئة"}»: ${label}`);
+        scheduleRenderCategories(true);
+        scheduleRenderProducts(true);
+      } catch (e) {
+        console.error("toggleCategoryBranch", e);
+        showToast("تعذّر تحديث فروع الفئة", "error");
+      }
+    }
+
+    function nextCategoryBranchIdsForProduct(category, productBranchIds) {
+      if (typeof BranchContext === "undefined" || !category) return null;
+      const productIds = BranchContext.normalizeBranchIds(productBranchIds) || [BranchContext.getResolvedDefaultBranchId()];
+      if (productIds.includes("all") || productIds.includes("*")) return ["all"];
+      const currentIds = BranchContext.normalizeBranchIds(category.branchIds);
+      if (currentIds && (currentIds.includes("all") || currentIds.includes("*"))) return ["all"];
+      const base = currentIds && currentIds.length ? currentIds : [BranchContext.getResolvedDefaultBranchId()];
+      const next = [...new Set([...base, ...productIds].filter(Boolean))];
+      const sameLength = currentIds && currentIds.length === next.length;
+      const sameValues = sameLength && next.every(id => currentIds.includes(id));
+      return sameValues ? null : next;
+    }
+
+    async function ensureCategoryCoversProductBranches(categoryId, productBranchIds) {
+      if (!categoryId || typeof BranchContext === "undefined") return;
+      const cat = categories.find(c => c.id === categoryId);
+      const next = nextCategoryBranchIdsForProduct(cat, productBranchIds);
+      if (!next) return;
+      await db.collection("menuCategories").doc(categoryId).update({
+        branchIds: next,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      if (cat) cat.branchIds = next;
+      scheduleRenderCategories(true);
     }
 
     function buildProductCardHtml(product) {
@@ -4102,83 +4406,8 @@
         </div>`;
     }
 
-    function getCategoryBranchPickerId(categoryKey) {
-      return `catBranchPicker_${String(categoryKey || PRODUCT_UNCATEGORIZED_KEY).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
-    }
-
-    function resolveStoredBranchIds(branchIds) {
-      const ids = typeof BranchContext !== "undefined" ? BranchContext.normalizeBranchIds(branchIds) : null;
-      if (!ids || !ids.length) {
-        return typeof BranchContext !== "undefined" ? [BranchContext.getResolvedDefaultBranchId()] : ["main"];
-      }
-      return ids;
-    }
-
-    function summarizeCategoryBranches(category) {
-      if (typeof BranchContext === "undefined" || typeof BranchesAdmin === "undefined") return "الفرع الرئيسي";
-      return BranchContext.summarizeBranchIds(category?.branchIds, BranchesAdmin.branches);
-    }
-
-    async function assignCategoryBranches(categoryKey, pickerId) {
-      if (typeof BranchesAdmin === "undefined") return;
-      const branchIds = BranchesAdmin.getSelectedChips(pickerId);
-      const isUncat = categoryKey === PRODUCT_UNCATEGORIZED_KEY;
-      const catProducts = products.filter(p => {
-        if (isUncat) return !p.categoryId || !categories.some(c => c.id === p.categoryId);
-        return p.categoryId === categoryKey;
-      });
-      if (!catProducts.length && isUncat) {
-        showToast("لا توجد منتجات غير مصنفة", "error");
-        return;
-      }
-      const label = BranchContext.summarizeBranchIds(branchIds, BranchesAdmin.branches);
-      const catName = isUncat ? "غير مصنف" : (categories.find(c => c.id === categoryKey)?.name || "الفئة");
-      if (!confirm(`تعيين «${catName}» و ${catProducts.length} منتج إلى: ${label}؟`)) return;
-      showToast("جاري تحديث الفروع...", "info", 3500);
-      try {
-        const batch = db.batch();
-        const ts = firebase.firestore.FieldValue.serverTimestamp();
-        if (!isUncat) {
-          batch.update(db.collection("menuCategories").doc(categoryKey), { branchIds, updatedAt: ts });
-          const cat = categories.find(c => c.id === categoryKey);
-          if (cat) cat.branchIds = branchIds;
-        }
-        catProducts.forEach(p => {
-          batch.update(db.collection("menuProducts").doc(p.id), { branchIds, updatedAt: ts });
-          p.branchIds = branchIds;
-        });
-        await batch.commit();
-        logActivity("branch_bulk_assign", "تعيين فروع لفئة", `${catName} → ${label}`);
-        showToast(`تم التحديث: ${catProducts.length} منتج ✅`);
-        scheduleRenderProducts(true);
-      } catch (e) {
-        console.error("assignCategoryBranches", e);
-        showToast("تعذّر تحديث الفروع", "error");
-      }
-    }
-
-    function initCategoryBranchPickers() {
-      if (typeof BranchesAdmin === "undefined") return;
-      document.querySelectorAll(".category-branch-picker").forEach((el) => {
-        const categoryKey = el.getAttribute("data-category-key");
-        if (!categoryKey) return;
-        let selected = resolveStoredBranchIds(null);
-        if (categoryKey === PRODUCT_UNCATEGORIZED_KEY) {
-          const first = products.find(p => !p.categoryId || !categories.some(c => c.id === p.categoryId));
-          if (first) selected = resolveStoredBranchIds(first.branchIds);
-        } else {
-          const cat = categories.find(c => c.id === categoryKey);
-          if (cat) selected = resolveStoredBranchIds(cat.branchIds);
-        }
-        BranchesAdmin.renderBranchSelectorChips(el.id, selected);
-      });
-    }
-
-    function buildProductCategoryGroupHtml(categoryKey, title, description, count, catProducts, expanded, category) {
+    function buildProductCategoryGroupHtml(categoryKey, title, description, count, catProducts, expanded) {
       const key = escapeHtml(categoryKey);
-      const pickerId = getCategoryBranchPickerId(categoryKey);
-      const branchSummary = category ? summarizeCategoryBranches(category) : summarizeCategoryBranches(catProducts[0]);
-      const safeKey = String(categoryKey).replace(/'/g, "\\'");
       const expandedCls = expanded ? " is-expanded" : "";
       const ariaExpanded = expanded ? "true" : "false";
       const productHtml = catProducts.length
@@ -4190,15 +4419,10 @@
             <i class="fas fa-layer-group" style="color:var(--gold-primary);font-size:18px;"></i>
             <div class="entity-meta">
               <h4>${escapeHtml(title)}</h4>
-              <p>${escapeHtml(description)} · ${count} منتج${count === 1 ? "" : "ات"} · <span class="category-branch-badge">${escapeHtml(branchSummary)}</span></p>
+              <p>${escapeHtml(description)} · ${count} منتج${count === 1 ? "" : "ات"}</p>
             </div>
             <i class="fas fa-chevron-down product-category-chevron" aria-hidden="true"></i>
           </button>
-          <div class="category-branch-bar" onclick="event.stopPropagation()">
-            <div class="category-branch-bar-title"><i class="fas fa-code-branch"></i> تعيين الفئة وكل منتجاتها (${count}) إلى:</div>
-            <div id="${pickerId}" class="branch-chips-wrap category-branch-picker" data-category-key="${key}"></div>
-            <button type="button" class="btn btn-gold btn-sm category-branch-apply" onclick="assignCategoryBranches('${safeKey}', '${pickerId}')"><i class="fas fa-check"></i> تطبيق</button>
-          </div>
           <div class="product-category-body">${productHtml}</div>
         </div>`;
     }
@@ -4264,7 +4488,6 @@
         return;
       }
       container.innerHTML = parts.join("");
-      initCategoryBranchPickers();
     }
 
     async function searchCustomer() {
@@ -4555,6 +4778,7 @@
     function refreshProductBranchChips() {
       if (typeof BranchesAdmin === "undefined") return;
       BranchesAdmin.renderBranchSelectorChips("newProductBranchChips", [BranchesAdmin.getActiveBranchId()]);
+      scheduleRenderCategories(true);
     }
     window.refreshProductBranchChips = refreshProductBranchChips;
 
@@ -4686,6 +4910,7 @@
         };
         if (imageValue) payload.image = imageValue;
         if (caloriesNum != null) payload.calories = caloriesNum;
+        await ensureCategoryCoversProductBranches(categoryId, payload.branchIds);
         const optimisticProduct = { id: `tmp_${Date.now()}`, ...withCafe(payload) };
         products.unshift(optimisticProduct);
         scheduleRenderProducts(true);
@@ -4817,6 +5042,7 @@
       if (caloriesUpdate != null) update.calories = caloriesUpdate;
       else update.calories = firebase.firestore.FieldValue.delete();
       await db.collection("menuProducts").doc(editProductId).update(update);
+      await ensureCategoryCoversProductBranches(update.categoryId, update.branchIds);
       logActivity("product_edit", "تم تعديل منتج", editedName);
       closeModals();
       showToast("تم الحفظ بنجاح ✅");
@@ -4948,7 +5174,7 @@
     window.openAddCategoryModal = openAddCategoryModal;
     window.closeAddCategoryModal = closeAddCategoryModal;
     window.openAddProductModal = openAddProductModal;
-    window.assignCategoryBranches = assignCategoryBranches;
+    window.toggleCategoryBranch = toggleCategoryBranch;
     window.closeAddProductModal = closeAddProductModal;
     window.showPremiumUpgradeModal = showPremiumUpgradeModal;
     window.closePremiumUpgradeModal = closePremiumUpgradeModal;

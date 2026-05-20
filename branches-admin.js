@@ -168,7 +168,7 @@
 
   function branchPickerSub(b) {
     if (b.isDefault) return "الفرع الافتراضي للمتجر";
-    return b.slug ? `رابط: ${escapeHtml(b.slug)}` : "فرع إضافي";
+    return "فرع متاح";
   }
 
   function renderBranchSelectorChips(containerId, selectedIds, onChangeName) {
@@ -183,7 +183,7 @@
     const change = onChangeName || "";
     const cards = active
       .map((b) => {
-        const on = selected.has(b.id) || selected.has("all");
+        const on = selected.has(b.id);
         const icon = b.isDefault ? "fa-store" : "fa-location-dot";
         const id = escapeHtml(b.id);
         return `<button type="button" class="branch-picker-card ${on ? "is-on" : ""}" data-branch-chip="${id}" onclick="BranchesAdmin.toggleChip('${containerId}', '${id}', '${change}')">
@@ -424,41 +424,41 @@
       })
     );
 
-    const catMap = {};
+    const batches = [];
+    let batch = db.batch();
+    let batchCount = 0;
+    const updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+    const enqueueUpdate = (ref, data) => {
+      batch.update(ref, data);
+      batchCount += 1;
+      if (batchCount >= 450) {
+        batches.push(batch.commit());
+        batch = db.batch();
+        batchCount = 0;
+      }
+    };
+    const addBranchToItem = (data) => {
+      const ids = BC().normalizeBranchIds(data.branchIds);
+      if (ids && (ids.includes("all") || ids.includes("*"))) return ["all"];
+      const base = ids && ids.length ? ids : [BC().isDefaultBranch(sourceBranchId) ? BC().getResolvedDefaultBranchId() : sourceBranchId];
+      return [...new Set([...base, newBranchId].filter(Boolean))];
+    };
+
     const cats = await db.collection("menuCategories").where("cafeId", "==", cafeId).get();
     for (const doc of cats.docs) {
       const data = doc.data();
       if (!BC().categoryMatchesBranch({ ...data, id: doc.id }, sourceBranchId)) continue;
-      const newCat = db.collection("menuCategories").doc();
-      catMap[doc.id] = newCat.id;
-      const branchIds = BC().branchIdsForDuplicate(data, newBranchId);
-      await newCat.set(
-        withCafe({
-          ...data,
-          branchIds,
-          sortOrder: data.sortOrder || 1,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        })
-      );
+      enqueueUpdate(doc.ref, { branchIds: addBranchToItem(data), updatedAt });
     }
 
     const prods = await db.collection("menuProducts").where("cafeId", "==", cafeId).get();
     for (const doc of prods.docs) {
       const data = doc.data();
       if (!BC().productMatchesBranch({ ...data, id: doc.id }, sourceBranchId)) continue;
-      const newProd = db.collection("menuProducts").doc();
-      const branchIds = BC().branchIdsForDuplicate(data, newBranchId);
-      const categoryId = catMap[data.categoryId] || data.categoryId;
-      await newProd.set(
-        withCafe({
-          ...data,
-          branchIds,
-          categoryId,
-          sortOrder: data.sortOrder || 1,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        })
-      );
+      enqueueUpdate(doc.ref, { branchIds: addBranchToItem(data), updatedAt });
     }
+    if (batchCount > 0) batches.push(batch.commit());
+    await Promise.all(batches);
 
     for (const scope of ["general", "theme", "contact", "loyalty", "dashboardConfig"]) {
       try {

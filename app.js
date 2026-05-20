@@ -768,9 +768,15 @@ function applyFeaturedMenuTitle(titleRaw) {
 
 function getVisibleCategories() {
   const list = menuCategoriesHydrated ? menuCategories : defaultMenuData().categories;
+  const productsList = menuProductsHydrated ? menuProducts : defaultMenuData().products;
   return list.filter(category => {
     if (category.visible === false) return false;
-    return typeof BranchContext === "undefined" || BranchContext.categoryMatchesBranch(category, activeBranchId);
+    if (typeof BranchContext === "undefined") return true;
+    if (BranchContext.categoryMatchesBranch(category, activeBranchId)) return true;
+    return productsList.some(product => {
+      if (product.visible === false || product.categoryId !== category.id) return false;
+      return BranchContext.productMatchesBranch(product, activeBranchId);
+    });
   });
 }
 
