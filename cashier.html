@@ -896,6 +896,200 @@
     .settings-acc details[open] summary::after { transform: rotate(135deg); }
     .settings-acc .acc-body { padding: 0 16px 16px; display: grid; gap: 12px; }
 
+    /* =====================================================
+       LOYALTY CONTROL SECTION — إعدادات الولاء والعملاء
+       ===================================================== */
+    .loyalty-control-section { display: grid; gap: 14px; }
+
+    .loyalty-section-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), color-mix(in srgb, var(--primary) 4%, transparent));
+      border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border-light));
+      border-radius: 18px;
+    }
+    .loyalty-section-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px; flex-shrink: 0;
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+    .loyalty-section-title { font-size: 14px; font-weight: 800; color: var(--text-dark); margin: 0 0 2px; }
+    .loyalty-section-desc { font-size: 12px; color: var(--text-light); margin: 0; }
+
+    /* Toggle Card */
+    .loyalty-toggle-card {
+      border-radius: 20px;
+      border: 1.5px solid color-mix(in srgb, var(--primary) 25%, var(--border-light));
+      background: rgba(255,255,255,0.95);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(44,36,24,0.06);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .loyalty-toggle-card:has(#loyaltyEnabledToggle:checked) {
+      border-color: color-mix(in srgb, var(--primary) 40%, var(--border-light));
+      box-shadow: 0 4px 24px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+    .loyalty-toggle-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 18px;
+    }
+    .loyalty-toggle-icon-wrap {
+      width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px;
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+    .loyalty-toggle-info { flex: 1; min-width: 0; }
+    .loyalty-toggle-title { display: block; font-size: 14px; font-weight: 800; color: var(--text-dark); }
+    .loyalty-toggle-subtitle { display: block; font-size: 11px; color: var(--text-soft); margin-top: 2px; }
+
+    /* Custom Toggle Switch */
+    .loyalty-switch { position: relative; display: inline-block; cursor: pointer; flex-shrink: 0; }
+    .loyalty-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .loyalty-switch-track {
+      display: block; width: 52px; height: 28px;
+      border-radius: 100px;
+      background: #D1D5DB;
+      transition: background 0.25s cubic-bezier(.4,0,.2,1);
+      position: relative;
+    }
+    .loyalty-switch input:checked + .loyalty-switch-track {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+    .loyalty-switch-thumb {
+      position: absolute;
+      top: 3px; right: 3px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+    }
+    .loyalty-switch input:checked ~ .loyalty-switch-track .loyalty-switch-thumb {
+      transform: translateX(-24px);
+    }
+    /* RTL fix */
+    [dir="rtl"] .loyalty-switch-thumb { right: auto; left: 3px; }
+    [dir="rtl"] .loyalty-switch input:checked ~ .loyalty-switch-track .loyalty-switch-thumb {
+      transform: translateX(24px);
+    }
+
+    /* Status Bar */
+    .loyalty-toggle-status {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      background: rgba(0,0,0,0.025);
+      border-top: 1px solid var(--border-light);
+      font-size: 11.5px; color: var(--text-light);
+      transition: background 0.25s;
+    }
+    .loyalty-status-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+      transition: background 0.25s;
+    }
+    .loyalty-status-dot--on { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.18); }
+    .loyalty-status-dot--off { background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.18); }
+
+    /* Preview Section */
+    .loyalty-preview-section { display: grid; gap: 10px; }
+    .loyalty-preview-label {
+      font-size: 12px; font-weight: 700; color: var(--text-light);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .loyalty-preview-tabs {
+      display: flex; gap: 6px; background: rgba(0,0,0,0.04);
+      border-radius: 14px; padding: 4px;
+    }
+    .loyalty-preview-tab {
+      flex: 1; padding: 7px 10px; border-radius: 10px;
+      border: none; background: none; cursor: pointer;
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      color: var(--text-light); transition: 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .loyalty-preview-tab.active {
+      background: #fff; color: var(--text-dark);
+      box-shadow: 0 2px 8px rgba(44,36,24,0.1);
+    }
+
+    /* Phone Mockup Preview */
+    .loyalty-preview-card {
+      display: grid; grid-template-columns: auto 1fr; gap: 16px;
+      align-items: start; padding: 14px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--border-light);
+      border-radius: 18px;
+    }
+    .lp-phone {
+      width: 80px; flex-shrink: 0;
+      background: #1c1c1e; border-radius: 14px;
+      padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .lp-screen {
+      background: var(--bg-light, #fdf9f2); border-radius: 11px;
+      overflow: hidden; min-height: 130px;
+    }
+    .lp-status-bar { height: 6px; background: var(--primary, #C9A03D); opacity: 0.6; border-radius: 6px 6px 0 0; }
+    .lp-content { padding: 5px 5px 4px; display: flex; flex-direction: column; gap: 4px; }
+    .lp-nav {
+      display: flex; gap: 2px; background: rgba(255,255,255,0.9);
+      border-radius: 6px; padding: 3px;
+    }
+    .lp-nav--slim { justify-content: center; }
+    .lp-nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      font-size: 6px; gap: 1px; padding: 3px 1px; border-radius: 5px;
+      color: #94a3b8;
+    }
+    .lp-nav-item.lp-active { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary, #C9A03D); }
+    .lp-nav-item i { font-size: 8px; }
+    .lp-body { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+    .lp-welcome {
+      background: linear-gradient(135deg, var(--primary, #C9A03D), var(--secondary, #B8860B));
+      border-radius: 6px; padding: 5px 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .lp-welcome-text { font-size: 6px; color: #fff; font-weight: 700; }
+    .lp-loyalty-badge {
+      font-size: 5px; background: rgba(255,255,255,0.25); color: #fff;
+      padding: 2px 4px; border-radius: 4px; display: flex; align-items: center; gap: 2px;
+    }
+    .lp-menu-items { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+    .lp-item { height: 22px; background: rgba(0,0,0,0.07); border-radius: 5px; }
+    .lp-desc { display: flex; flex-direction: column; gap: 6px; }
+    .lp-desc-title { font-size: 12px; font-weight: 700; color: var(--text-dark); margin: 0; display: flex; align-items: center; gap: 5px; }
+    .lp-desc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .lp-desc-list li { font-size: 11px; color: var(--text-light); display: flex; align-items: center; gap: 5px; }
+    .lp-desc-list li i { font-size: 9px; color: var(--primary); }
+
+    /* Info Cards */
+    .loyalty-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 480px) { .loyalty-info-grid { grid-template-columns: 1fr; } }
+    .loyalty-info-card {
+      border-radius: 14px; padding: 12px 14px;
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 12px;
+    }
+    .loyalty-info-card i { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+    .loyalty-info-card strong { display: block; font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+    .loyalty-info-card p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--text-light); }
+    .loyalty-info-card--safe {
+      background: rgba(34,197,94,0.07);
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+    .loyalty-info-card--safe i, .loyalty-info-card--safe strong { color: #16a34a; }
+    .loyalty-info-card--live {
+      background: color-mix(in srgb, var(--primary) 7%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+    .loyalty-info-card--live i, .loyalty-info-card--live strong { color: var(--secondary); }
+    /* =====================================================
+       /LOYALTY CONTROL SECTION
+       ===================================================== */
+
     .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; align-items: stretch; }
     @media (max-width: 860px) { .compare-grid { grid-template-columns: 1fr; } }
     .compare-card {
@@ -1428,11 +1622,159 @@
                   </div>
                 </div>
               </details>
-              <details>
-                <summary>الولاء</summary>
+              <details id="loyaltySettingsAccordion">
+                <summary><i class="fas fa-crown" style="color:var(--gold-primary);"></i> الولاء والعملاء</summary>
                 <div class="acc-body">
-                  <p class="tiny" style="margin:0;">تخصيص بطاقة الولاء والمكافآت والنصوص من صفحة «التخصيص».</p>
-                  <button type="button" class="btn btn-gold" style="margin-top:10px;" onclick="goToCashierSection('customization')"><i class="fas fa-wand-magic-sparkles"></i> فتح التخصيص</button>
+
+                  <!-- ============================================================
+                       LOYALTY VISIBILITY CONTROL — إعدادات الولاء والعملاء
+                       ============================================================ -->
+                  <div class="loyalty-control-section">
+
+                    <!-- Section Header -->
+                    <div class="loyalty-section-header">
+                      <div class="loyalty-section-icon">
+                        <i class="fas fa-sliders"></i>
+                      </div>
+                      <div>
+                        <h4 class="loyalty-section-title">إعدادات الولاء والعملاء</h4>
+                        <p class="loyalty-section-desc">تحكم في تجربة العملاء — الولاء الكامل أو قائمة نظيفة فقط</p>
+                      </div>
+                    </div>
+
+                    <!-- Main Loyalty Toggle Card -->
+                    <div class="loyalty-toggle-card" id="loyaltyMainToggleCard">
+                      <div class="loyalty-toggle-header">
+                        <div class="loyalty-toggle-icon-wrap">
+                          <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="loyalty-toggle-info">
+                          <span class="loyalty-toggle-title">تفعيل نظام الولاء</span>
+                          <span class="loyalty-toggle-subtitle">النقاط · المكافآت · حسابات العملاء · تسجيل الدخول</span>
+                        </div>
+                        <label class="loyalty-switch" aria-label="تفعيل نظام الولاء">
+                          <input type="checkbox" id="loyaltyEnabledToggle" checked onchange="saveLoyaltyEnabled(this)">
+                          <span class="loyalty-switch-track">
+                            <span class="loyalty-switch-thumb"></span>
+                          </span>
+                        </label>
+                      </div>
+                      <div class="loyalty-toggle-status" id="loyaltyToggleStatus">
+                        <span class="loyalty-status-dot loyalty-status-dot--on"></span>
+                        <span id="loyaltyToggleStatusText">نظام الولاء مفعّل — العملاء يرون النقاط والمكافآت وحساباتهم</span>
+                      </div>
+                    </div>
+
+                    <!-- Live Preview Section -->
+                    <div class="loyalty-preview-section">
+                      <p class="loyalty-preview-label"><i class="fas fa-eye"></i> معاينة تجربة العميل</p>
+                      <div class="loyalty-preview-tabs">
+                        <button type="button" class="loyalty-preview-tab active" id="previewTabOn" onclick="switchLoyaltyPreview('on')">
+                          <i class="fas fa-crown"></i> مع الولاء
+                        </button>
+                        <button type="button" class="loyalty-preview-tab" id="previewTabOff" onclick="switchLoyaltyPreview('off')">
+                          <i class="fas fa-utensils"></i> قائمة فقط
+                        </button>
+                      </div>
+
+                      <!-- Preview: Loyalty ON -->
+                      <div class="loyalty-preview-card" id="previewStateOn">
+                        <div class="lp-phone">
+                          <div class="lp-screen">
+                            <div class="lp-status-bar"></div>
+                            <div class="lp-content">
+                              <div class="lp-nav">
+                                <div class="lp-nav-item lp-active"><i class="fas fa-home"></i><span>القائمة</span></div>
+                                <div class="lp-nav-item"><i class="fas fa-gift"></i><span>الولاء</span></div>
+                                <div class="lp-nav-item"><i class="fas fa-user"></i><span>حسابي</span></div>
+                              </div>
+                              <div class="lp-body">
+                                <div class="lp-welcome">
+                                  <div class="lp-welcome-text">مرحباً بك</div>
+                                  <div class="lp-loyalty-badge"><i class="fas fa-star"></i> 12 نقطة</div>
+                                </div>
+                                <div class="lp-menu-items">
+                                  <div class="lp-item"></div>
+                                  <div class="lp-item"></div>
+                                  <div class="lp-item"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="lp-desc">
+                          <p class="lp-desc-title"><i class="fas fa-check-circle" style="color:#22c55e;"></i> تجربة الولاء الكاملة</p>
+                          <ul class="lp-desc-list">
+                            <li><i class="fas fa-check"></i> تسجيل الدخول والتسجيل</li>
+                            <li><i class="fas fa-check"></i> نقاط ومكافآت</li>
+                            <li><i class="fas fa-check"></i> بطاقة الولاء</li>
+                            <li><i class="fas fa-check"></i> صفحة حسابي</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <!-- Preview: Loyalty OFF -->
+                      <div class="loyalty-preview-card" id="previewStateOff" style="display:none;">
+                        <div class="lp-phone">
+                          <div class="lp-screen">
+                            <div class="lp-status-bar"></div>
+                            <div class="lp-content">
+                              <div class="lp-nav lp-nav--slim">
+                                <div class="lp-nav-item lp-active"><i class="fas fa-home"></i><span>القائمة</span></div>
+                              </div>
+                              <div class="lp-body">
+                                <div class="lp-welcome">
+                                  <div class="lp-welcome-text">قائمة المتجر</div>
+                                </div>
+                                <div class="lp-menu-items">
+                                  <div class="lp-item"></div>
+                                  <div class="lp-item"></div>
+                                  <div class="lp-item"></div>
+                                  <div class="lp-item"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="lp-desc">
+                          <p class="lp-desc-title"><i class="fas fa-utensils" style="color:var(--gold-primary);"></i> تجربة القائمة النظيفة</p>
+                          <ul class="lp-desc-list">
+                            <li><i class="fas fa-check"></i> قائمة المنتجات</li>
+                            <li><i class="fas fa-check"></i> الفئات والتصفح</li>
+                            <li><i class="fas fa-check"></i> البنرات والمظهر</li>
+                            <li style="color:var(--text-soft);"><i class="fas fa-minus"></i> لا يوجد تسجيل دخول</li>
+                            <li style="color:var(--text-soft);"><i class="fas fa-minus"></i> لا توجد نقاط أو مكافآت</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Info Cards -->
+                    <div class="loyalty-info-grid">
+                      <div class="loyalty-info-card loyalty-info-card--safe">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                          <strong>البيانات محفوظة دائماً</strong>
+                          <p>إيقاف الولاء لا يحذف النقاط أو الحسابات — تظهر فوراً عند إعادة التفعيل</p>
+                        </div>
+                      </div>
+                      <div class="loyalty-info-card loyalty-info-card--live">
+                        <i class="fas fa-bolt"></i>
+                        <div>
+                          <strong>تأثير فوري</strong>
+                          <p>التغيير يظهر لدى العملاء بشكل فوري دون الحاجة لتحديث الصفحة</p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <!-- /LOYALTY VISIBILITY CONTROL -->
+
+                  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-light);">
+                    <p class="tiny" style="margin:0;">تخصيص بطاقة الولاء والمكافآت والنصوص من صفحة «التخصيص».</p>
+                    <button type="button" class="btn btn-gold" style="margin-top:10px;" onclick="goToCashierSection('customization')"><i class="fas fa-wand-magic-sparkles"></i> فتح التخصيص</button>
+                  </div>
+
                 </div>
               </details>
               <details>
@@ -3434,6 +3776,13 @@
         if (bannerEnabledEl) bannerEnabledEl.checked = data.bannerSliderEnabled !== false;
         homeBannersDraft = Array.isArray(data.homeBanners) ? data.homeBanners.slice() : [];
         scheduleRenderHomeBannersEditor();
+        // Load loyalty visibility toggle state
+        const loyaltyToggleEl = document.getElementById("loyaltyEnabledToggle");
+        if (loyaltyToggleEl) {
+          const isLoyaltyEnabled = data.loyaltyEnabled !== false; // default true
+          loyaltyToggleEl.checked = isLoyaltyEnabled;
+          updateLoyaltyToggleUI(isLoyaltyEnabled);
+        }
         updateCashierStoreChrome();
       });
     }
@@ -3477,6 +3826,89 @@
         showToast("تعذّر حفظ الإعداد.", "error");
       }
     }
+
+    // =====================================================
+    // LOYALTY VISIBILITY — إعدادات الولاء والعملاء
+    // =====================================================
+
+    /**
+     * Saves loyaltyEnabled flag to Firestore settings/general.
+     * Uses merge:true so it never overwrites other general settings.
+     * Data (points, rewards, accounts) is NEVER deleted — just the flag changes.
+     */
+    async function saveLoyaltyEnabled(el) {
+      const isEnabled = !!el.checked;
+      updateLoyaltyToggleUI(isEnabled);
+      try {
+        await settingsScopedRef("general").set(withCafe({
+          loyaltyEnabled: isEnabled,
+          updatedAt: new Date()
+        }), { merge: true });
+        logActivity(
+          "settings_update",
+          "نظام الولاء",
+          isEnabled ? "تم التفعيل" : "تم الإيقاف"
+        );
+        showToast(isEnabled ? "✅ تم تفعيل نظام الولاء" : "✅ تم إيقاف نظام الولاء");
+      } catch (e) {
+        console.error("saveLoyaltyEnabled", e);
+        // Revert UI on failure
+        el.checked = !isEnabled;
+        updateLoyaltyToggleUI(!isEnabled);
+        showToast("تعذّر حفظ الإعداد.", "error");
+      }
+    }
+
+    /** Updates the status indicator text and dot colour under the toggle card. */
+    function updateLoyaltyToggleUI(isEnabled) {
+      const statusDot = document.querySelector(".loyalty-toggle-status .loyalty-status-dot");
+      const statusText = document.getElementById("loyaltyToggleStatusText");
+      if (statusDot) {
+        statusDot.className = `loyalty-status-dot ${isEnabled ? "loyalty-status-dot--on" : "loyalty-status-dot--off"}`;
+      }
+      if (statusText) {
+        statusText.textContent = isEnabled
+          ? "نظام الولاء مفعّل — العملاء يرون النقاط والمكافآت وحساباتهم"
+          : "نظام الولاء موقوف — يرى العملاء القائمة فقط، بياناتهم محفوظة";
+      }
+    }
+
+    /** Loads current loyaltyEnabled state from Firestore and seeds the toggle. */
+    async function loadLoyaltyToggleState() {
+      try {
+        const doc = await settingsScopedRef("general").get();
+        const data = doc.exists ? doc.data() || {} : {};
+        const isEnabled = data.loyaltyEnabled !== false; // default true
+        const toggle = document.getElementById("loyaltyEnabledToggle");
+        if (toggle) toggle.checked = isEnabled;
+        updateLoyaltyToggleUI(isEnabled);
+      } catch (e) {
+        console.error("loadLoyaltyToggleState", e);
+      }
+    }
+
+    /** Switches the live preview between the 'on' and 'off' states. */
+    function switchLoyaltyPreview(state) {
+      const onCard = document.getElementById("previewStateOn");
+      const offCard = document.getElementById("previewStateOff");
+      const tabOn = document.getElementById("previewTabOn");
+      const tabOff = document.getElementById("previewTabOff");
+      if (!onCard || !offCard) return;
+      if (state === "on") {
+        onCard.style.display = "";
+        offCard.style.display = "none";
+        tabOn?.classList.add("active");
+        tabOff?.classList.remove("active");
+      } else {
+        onCard.style.display = "none";
+        offCard.style.display = "";
+        tabOff?.classList.add("active");
+        tabOn?.classList.remove("active");
+      }
+    }
+    // =====================================================
+    // /LOYALTY VISIBILITY
+    // =====================================================
 
     async function savePreOrderWorkingHours(buttonOrEl) {
       if (isCashierSaasFree()) {
@@ -5215,6 +5647,8 @@
     window.executeDeleteProduct = executeDeleteProduct;
     window.savePreOrderToggle = savePreOrderToggle;
     window.savePreOrderWorkingHours = savePreOrderWorkingHours;
+    window.saveLoyaltyEnabled = saveLoyaltyEnabled;
+    window.switchLoyaltyPreview = switchLoyaltyPreview;
     window.addOptionToNewProduct = addOptionToNewProduct;
     window.addOptionToEditProduct = addOptionToEditProduct;
     window.editOptionGroup = editOptionGroup;

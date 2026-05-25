@@ -2587,3 +2587,73 @@ button {
 .branch-status--on { color: #2e7d32; font-weight: 700; }
 .branch-status--off { color: #c62839; font-weight: 700; }
 .btn-sm { padding: 7px 10px; font-size: 12px; }
+
+/* ==========================================================================
+   LOYALTY VISIBILITY — loyalty-disabled state
+   Applied to <body> and <html> when the store owner turns off loyalty.
+   Goal: clean, intentional, professional menu-only experience.
+   ========================================================================== */
+
+/* ── Hide all loyalty & account elements ─────────────────────────── */
+
+/* Bottom nav loyalty + profile tabs */
+html.loyalty-disabled .nav-item[data-screen="loyalty"],
+html.loyalty-disabled .nav-item[data-screen="profile"] {
+  display: none !important;
+}
+
+/* Loyalty screens */
+html.loyalty-disabled #loyaltyScreen,
+html.loyalty-disabled #profileScreen {
+  display: none !important;
+}
+
+/* Login / Register screens */
+html.loyalty-disabled #loginScreen,
+html.loyalty-disabled #registerScreen {
+  display: none !important;
+}
+
+/* Home loyalty invite / status cards */
+html.loyalty-disabled #loyaltyInviteCard,
+html.loyalty-disabled #loyaltyStatusCard {
+  display: none !important;
+}
+
+/* ── Bottom nav layout — reflow remaining items cleanly ─────────── */
+
+/* When loyalty is disabled we typically have just: القائمة + (سلتي if preorder) */
+html.loyalty-disabled .bottom-nav {
+  /* Let flex naturally center remaining tabs */
+  justify-content: center;
+  gap: 0;
+}
+
+html.loyalty-disabled .bottom-nav .nav-item {
+  flex: 0 0 auto;
+  min-width: 72px;
+  padding: 8px 18px;
+}
+
+/* ── Home screen refinements ────────────────────────────────────── */
+
+/* Give the menu categories view a bit more top space when loyalty cards are gone */
+html.loyalty-disabled #menuCategoriesView {
+  margin-top: 4px;
+}
+
+/* Fade-in animation so the clean menu feels intentional */
+html.loyalty-disabled #homeScreen {
+  animation: loyaltyOffFadeIn 0.3s ease forwards;
+}
+
+@keyframes loyaltyOffFadeIn {
+  from { opacity: 0.7; transform: translateY(4px); }
+  to   { opacity: 1;   transform: translateY(0);   }
+}
+
+/* ── Saas-free interactions stay intact ─────────────────────────── */
+/* The .customer-saas-free class still works independently. */
+/* ==========================================================================
+   /LOYALTY VISIBILITY
+   ========================================================================== */

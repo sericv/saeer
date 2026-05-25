@@ -97,6 +97,14 @@ let generalSettingsUnsubscribe = null;
 let featuredMenuTitle = "القائمة المميزة";
 let preOrderEnabled = false;
 let preorderGeneralSettingsLoaded = false;
+/**
+ * loyaltyEnabled — controlled from dashboard settings.loyaltyEnabled (general doc).
+ * When false: loyalty nav, loyalty screen, login/register, profile nav, and
+ * all loyalty-related cards are hidden. Data is preserved in Firestore.
+ * Default true so existing stores are unaffected before first settings write.
+ */
+let loyaltyEnabled = true;
+let loyaltyVisibilityUnsubscribe = null;
 let homeBanners = [];
 /** Banners currently rendered in the slider (may be a subset for free tier). */
 let homeBannersDisplayList = [];
@@ -702,6 +710,8 @@ function isNewProduct(product) {
 function updateHomeLoyaltyCardState() {
   const inviteCard = document.getElementById("loyaltyInviteCard");
   const statusCard = document.getElementById("loyaltyStatusCard");
+  // Always hidden — loyalty cards on home are not shown in this design;
+  // also force-hidden when loyalty system is disabled.
   if (inviteCard) inviteCard.style.display = "none";
   if (statusCard) statusCard.style.display = "none";
 }
@@ -1394,6 +1404,102 @@ function subscribeGeneralSettings() {
     }
   );
 }
+
+// ==================== LOYALTY VISIBILITY ====================
+
+/**
+ * Real-time listener for the loyaltyEnabled flag stored in settings/general.
+ * Safe merge: reads from the same general doc as preorder/banners.
+ * Does NOT touch the loyalty settings doc or any loyalty data.
+ */
+function subscribeLoyaltyVisibility() {
+  if (loyaltyVisibilityUnsubscribe) {
+    loyaltyVisibilityUnsubscribe();
+    loyaltyVisibilityUnsubscribe = null;
+  }
+  if (!db) return;
+  loyaltyVisibilityUnsubscribe = settingsScopedRef("general").onSnapshot(
+    async (doc) => {
+      let data = doc.exists ? doc.data() || {} : {};
+      if (!doc.exists && typeof BranchContext !== "undefined" && !BranchContext.isDefaultBranch(activeBranchId)) {
+        const leg = await db.collection("settings").doc(`${cafeId}_general`).get();
+        if (leg.exists) data = leg.data() || {};
+      }
+      // Default to true if field doesn't exist (backward-compatible with existing stores)
+      const newValue = data.loyaltyEnabled !== false;
+      if (newValue !== loyaltyEnabled) {
+        loyaltyEnabled = newValue;
+        applyLoyaltyVisibility();
+      }
+    },
+    (err) => console.error("loyalty visibility listener", err)
+  );
+}
+
+/**
+ * Applies loyalty visibility to the entire customer page.
+ * When loyaltyEnabled=false: hides nav items, loyalty screen, profile nav,
+ * login/register screens, and home loyalty cards cleanly.
+ * Layout reorganises itself naturally — no empty holes.
+ */
+function applyLoyaltyVisibility() {
+  const free = isCustomerSaasFree();
+  const show = loyaltyEnabled && !free;
+
+  // 1. Bottom nav — loyalty tab
+  const loyaltyNav = document.querySelector('.nav-item[data-screen="loyalty"]');
+  if (loyaltyNav) {
+    loyaltyNav.style.display = show ? "" : "none";
+    loyaltyNav.setAttribute("aria-hidden", show ? "false" : "true");
+  }
+
+  // 2. Bottom nav — profile / حسابي tab
+  const profileNav = document.querySelector('.nav-item[data-screen="profile"]');
+  if (profileNav) {
+    profileNav.style.display = show ? "" : "none";
+    profileNav.setAttribute("aria-hidden", show ? "false" : "true");
+  }
+
+  // 3. Home loyalty cards (invite + status)
+  const inviteCard = document.getElementById("loyaltyInviteCard");
+  const statusCard = document.getElementById("loyaltyStatusCard");
+  if (inviteCard) inviteCard.style.display = "none"; // always managed by updateHomeLoyaltyCardState
+  if (statusCard) statusCard.style.display = "none";
+
+  // 4. Class on body for CSS-level hiding of loyalty elements
+  document.body.classList.toggle("loyalty-disabled", !show);
+  document.documentElement.classList.toggle("loyalty-disabled", !show);
+
+  // 5. If currently on loyalty/profile screen and loyalty is turned off → go home
+  const loyaltyScreenEl = document.getElementById("loyaltyScreen");
+  const profileScreenEl = document.getElementById("profileScreen");
+  if (!show) {
+    if (loyaltyScreenEl?.classList.contains("active")) switchToScreen("home");
+    if (profileScreenEl?.classList.contains("active")) switchToScreen("home");
+  }
+
+  // 6. Re-evaluate home card state
+  updateHomeLoyaltyCardState();
+
+  // 7. If on login/register screens and loyalty is off, redirect to main menu
+  if (!show) {
+    const loginEl = document.getElementById("loginScreen");
+    const regEl = document.getElementById("registerScreen");
+    const mainEl = document.getElementById("mainApp");
+    if (loginEl && loginEl.style.display !== "none" && mainEl) {
+      // Show menu directly without login
+      loginEl.style.display = "none";
+      mainEl.style.display = "flex";
+      switchToScreen("home");
+    }
+    if (regEl && regEl.style.display !== "none" && mainEl) {
+      regEl.style.display = "none";
+      mainEl.style.display = "flex";
+      switchToScreen("home");
+    }
+  }
+}
+
 
 function applyPreorderAvailability() {
   const navCart = document.getElementById("navCartItem");
@@ -2323,7 +2429,7 @@ function showMainApp() {
 }
 
 function showLoginScreen() {
-  if (isCustomerSaasFree()) {
+  if (isCustomerSaasFree() || !loyaltyEnabled) {
     continueAsGuest();
     return;
   }
@@ -2353,6 +2459,10 @@ function switchToScreen(screen) {
   if (isCustomerSaasFree() && (screen === "loyalty" || screen === "profile" || screen === "cart")) {
     screen = "home";
   }
+  // Block loyalty & profile screens when loyalty system is disabled
+  if (!loyaltyEnabled && (screen === "loyalty" || screen === "profile")) {
+    screen = "home";
+  }
   document.querySelectorAll(".nav-item").forEach(nav => nav.classList.remove("active"));
   document.querySelectorAll(".page-content").forEach(page => page.classList.remove("active"));
   const nav = document.querySelector(`.nav-item[data-screen="${screen}"]`);
@@ -2362,7 +2472,7 @@ function switchToScreen(screen) {
 }
 
 function openLoyaltyAuth() {
-  if (isCustomerSaasFree()) {
+  if (isCustomerSaasFree() || !loyaltyEnabled) {
     switchToScreen("home");
     return;
   }
@@ -2373,7 +2483,7 @@ function openLoyaltyAuth() {
 }
 
 function openLoyaltyInvite() {
-  if (isCustomerSaasFree()) {
+  if (isCustomerSaasFree() || !loyaltyEnabled) {
     switchToScreen("home");
     return;
   }
@@ -2701,6 +2811,7 @@ async function startMainApp() {
   setupProductOptionsModal();
   subscribeCustomerCafeMeta();
   subscribeGeneralSettings();
+  subscribeLoyaltyVisibility();
 
   loadPersistedCart();
   updateCartChrome();
@@ -2784,6 +2895,8 @@ function setupNavigation() {
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
       const screen = item.dataset.screen;
+      // Block loyalty & profile tabs when loyalty system is disabled
+      if (!loyaltyEnabled && (screen === "loyalty" || screen === "profile")) return;
       if (screen === "loyalty") {
         updateLoyaltyEntryState();
       }
